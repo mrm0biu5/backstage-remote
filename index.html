@@ -103,7 +103,7 @@ input:focus,textarea:focus{border-color:var(--gold)}
 
 <script>
 // (bump on every change, so the owner can tell which version the phone is showing)
-const VERSION = "1.4";
+const VERSION = "1.5";
 document.getElementById("ver").textContent = "v" + VERSION;
 const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
 const $ = s => document.querySelector(s);
@@ -159,6 +159,8 @@ function actCard(a) {
     <div class="state"></div>
     ${top ? `<div class="sec top">${top}</div>` : ''}${actions ? `<div class="sec">${actions}</div>` : ''}
     ${status.results?.[a.name] ? `<details><summary>Latest results</summary><div class="res" id="res-${a.name}"></div></details>` : ''}
+    ${status.library?.[a.name] ? `<details><summary>Library <span id="libn-${a.name}"></span></summary>
+      <div class="help">Reused instantly when the name comes up again. Photos are on the Mac.</div><div class="res" id="lib-${a.name}"></div></details>` : ''}
     ${rest ? `<details><summary>Settings</summary>${rest}</details>` : ''}</div>`;
 }
 // tricks that are web apps of their own (phone home-screen apps), listed with the acts on the home page
@@ -229,6 +231,19 @@ function fill() {
     });
     const r = $('#res-' + a.name);
     if (r) r.innerHTML = (status.results[a.name] || []).map(g => `<div>${esc(g.title)}<span>${esc(g.caption)}</span></div>`).join('') || '<div class="help">None yet.</div>';
+    const lb = $('#lib-' + a.name), names = status.library?.[a.name] || [];
+    if (lb && lb.dataset.v !== JSON.stringify(names)) {
+      lb.dataset.v = JSON.stringify(names); $('#libn-' + a.name).textContent = names.length ? `(${names.length})` : '';
+      lb.innerHTML = names.map(n => `<div style="display:flex;align-items:center">${esc(n)}<button class="btn" data-forget="${esc(n)}" style="margin-left:auto;padding:4px 10px;font-size:13px">Forget</button></div>`).join('') || '<div class="help">Empty: each new photo is kept here.</div>';
+      lb.querySelectorAll('[data-forget]').forEach(b => b.onclick = async () => {
+        if (!confirm('Forget ' + b.dataset.forget + '? The next time this name comes up, a new photo is made.')) return;
+        b.disabled = true; b.textContent = 'Sending…';
+        try { await update('commands.json', d => { d = d || {commands: []}; d.commands = d.commands.filter(c => Date.now() / 1000 - c.at < 900).slice(-19);
+            d.commands.push({cid: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), act: a.name, action: 'forget', args: {value: b.dataset.forget}, at: Date.now() / 1000}); return d; },
+            `${a.name}: forget from the phone`); b.textContent = 'Sent'; }
+        catch (e) { alert(e.message); b.disabled = false; b.textContent = 'Forget'; }
+      });
+    }
     c.querySelectorAll('.action[data-cid]').forEach(box => {
       if ((status.done || []).includes(box.dataset.cid)) { const m = box.querySelector('.msg'); m.className = 'msg ok'; m.textContent = 'Done on the Mac ✓'; delete box.dataset.cid; }
     });
