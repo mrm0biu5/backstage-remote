@@ -73,6 +73,8 @@ input:focus,textarea:focus{border-color:var(--gold)}
     <div class="title">Connect this phone</div>
     <div class="about">Paste a GitHub token that can read and write the private <b>backstage-sync</b> repo. It's kept only on
       this phone and sent only to GitHub.</div>
+    <div class="about" id="tokHint" hidden style="color:var(--gold,#d4a84b)">You're in Safari, which forgets the token. Tap Share →
+      <b>Add to Home Screen</b>, open Backstage from that icon and connect there once: it stays connected.</div>
     <label>GitHub token</label><input type="password" id="tok" autocomplete="off" placeholder="github_pat_…">
     <div class="row" style="margin-top:12px"><button class="btn gold" id="tokSave">Connect</button><span class="msg" id="tokMsg"></span></div>
   </div>
@@ -96,7 +98,7 @@ input:focus,textarea:focus{border-color:var(--gold)}
 
 <script>
 // (bump on every change, so the owner can tell which version the phone is showing)
-const VERSION = "1.1";
+const VERSION = "1.2";
 document.getElementById("ver").textContent = "v" + VERSION;
 const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
 const $ = s => document.querySelector(s);
@@ -237,7 +239,7 @@ async function refresh() {
     if (/token/.test(e.message)) showConnect();
   }
 }
-function showConnect() { $('#connect').hidden = false; $('#nav').hidden = true; $('#cog').hidden = true; $('#sys').hidden = true; $('#pages').innerHTML = ''; built = ''; }
+function showConnect() { $('#tokHint').hidden = !!navigator.standalone; $('#connect').hidden = false; $('#nav').hidden = true; $('#cog').hidden = true; $('#sys').hidden = true; $('#pages').innerHTML = ''; built = ''; }
 $('#tokSave').onclick = async () => {
   token = $('#tok').value.trim(); if (!token) return;
   try { await getFile('status.json'); try { localStorage.setItem('bsToken', token); } catch (e) {}
