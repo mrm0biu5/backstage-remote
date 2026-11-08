@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Backstage">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Backstage</title>
+<!--
+  Backstage remote: the phone's control page, from anywhere (GitHub Pages, repo mrm0biu5/backstage-remote; source
+  in MagicAppDev/backstage/remote/). It talks to the private repo mrm0biu5/backstage-sync with a GitHub token kept
+  only on this phone: reads status.json (the Mac's acts, their controls and state), writes settings.json (switches
+  and settings, applied by the Mac within ~5 s) and commands.json (buttons). See backstage/sync.py.
+-->
+<style>
+:root{--bg:#0b0b0e;--card:#16161b;--card2:#1e1e25;--line:#2a2a33;--text:#ececf1;--dim:#9a9aa6;--faint:#6b6b76;--gold:#d8b25a;--green:#35c26b;--red:#ef5350;--amber:#f0a83a}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;-webkit-font-smoothing:antialiased}
+body{padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 24px)}
+.wrap{max-width:720px;margin:0 auto}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px}
+.brand img{width:30px;height:30px;border-radius:8px}
+.pill{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);background:var(--card);border:1px solid var(--line);padding:5px 10px;border-radius:99px;white-space:nowrap}
+.led{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:none}
+.led.ok{background:var(--green);box-shadow:0 0 8px var(--green)}.led.bad{background:var(--red);box-shadow:0 0 8px var(--red)}.led.wait{background:var(--amber)}
+nav{display:flex;gap:6px;background:var(--card);padding:4px;border-radius:12px;border:1px solid var(--line);margin-bottom:16px;overflow-x:auto}
+nav button{flex:1;background:none;border:0;color:var(--dim);font:inherit;font-weight:600;padding:8px 10px;border-radius:9px;cursor:pointer;white-space:nowrap}
+nav button.sel{background:var(--card2);color:var(--text)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px}
+.head{display:flex;align-items:flex-start;gap:12px}.head .led{margin-top:7px}.head .txt{flex:1;min-width:0}
+.title{font-weight:650;font-size:16px}.about{color:var(--dim);font-size:13.5px;margin-top:2px}
+.state{font-size:13.5px;margin-top:8px;padding:8px 10px;background:var(--bg);border-radius:9px;color:var(--dim);overflow-wrap:anywhere}.state.bad{color:#ffb3b1}
+.switch{position:relative;width:46px;height:28px;flex:none;cursor:pointer;margin:0}
+.switch input{display:none}.switch span{position:absolute;inset:0;background:#3a3a44;border-radius:99px;transition:.2s}
+.switch span:after{content:"";position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s}
+.switch input:checked+span{background:var(--green)}.switch input:checked+span:after{transform:translateX(18px)}
+.sec{margin-top:12px}.sec.top{background:var(--card2);border-radius:12px;padding:2px 12px 12px}
+details{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+summary{cursor:pointer;color:var(--dim);font-size:13.5px;font-weight:600;list-style:none}summary::-webkit-details-marker{display:none}
+summary:before{content:"▸ ";color:var(--faint)}details[open] summary:before{content:"▾ "}
+label{display:block;font-size:13px;color:var(--dim);margin:10px 0 5px;font-weight:600}
+.help{font-size:12.5px;color:var(--faint);margin-top:4px}
+input[type=text],input[type=password]{width:100%;font:inherit;font-size:16px;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;outline:none}
+textarea{width:100%;font:13px/1.45 ui-monospace,Menlo,monospace;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;outline:none;resize:vertical;min-height:150px}
+input:focus,textarea:focus{border-color:var(--gold)}
+.chk{display:flex;align-items:center;gap:12px;margin:12px 0 0;font-size:14.5px;font-weight:500}
+.row{display:flex;gap:8px;align-items:center}
+.btn{font:inherit;font-weight:600;border:0;border-radius:10px;padding:10px 14px;background:var(--card2);color:var(--text);cursor:pointer}
+.btn.gold{background:var(--gold);color:#1a1405}.btn:disabled{opacity:.5}
+.action{background:var(--card2);border-radius:12px;padding:12px;margin-top:10px}.action .name{font-weight:650;font-size:14.5px}
+.msg{font-size:13px;margin-top:6px;min-height:1em}.msg.ok{color:var(--green)}.msg.bad{color:var(--red)}
+.saved{font-size:12px;color:var(--green);margin-left:6px}
+.res{margin-top:8px}.res div{padding:6px 0;border-top:1px solid var(--line);font-size:14px}.res span{color:var(--faint);font-size:12.5px;margin-left:6px}
+.empty{color:var(--faint);text-align:center;padding:24px}
+</style>
+</head>
+<body><div class="wrap">
+<header>
+  <div class="brand"><img src="icon-180.png" alt="">Backstage</div>
+  <div class="pill"><span class="led" id="macLed"></span><span id="macTxt">connecting…</span></div>
+</header>
+
+<section id="connect" hidden>
+  <div class="card">
+    <div class="title">Connect this phone</div>
+    <div class="about">Paste a GitHub token that can read and write the private <b>backstage-sync</b> repo. It's kept only on
+      this phone and sent only to GitHub.</div>
+    <label>GitHub token</label><input type="password" id="tok" autocomplete="off" placeholder="github_pat_…">
+    <div class="row" style="margin-top:12px"><button class="btn gold" id="tokSave">Connect</button><span class="msg" id="tokMsg"></span></div>
+  </div>
+</section>
+
+<nav id="nav" hidden></nav>
+<div id="pages"></div>
+<section id="sys" hidden>
+  <div class="card"><div class="title">This phone</div>
+    <div class="about">Changes reach the Mac through GitHub within about 5 seconds; buttons run there within about 10.</div>
+    <div class="row" style="margin-top:12px"><button class="btn" id="forget">Disconnect this phone</button></div></div>
+</section>
+</div>
+
+<script>
+const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let token = ''; try { token = localStorage.getItem('bsToken') || ''; } catch (e) {}
+const sha = {};
+
+// ---- GitHub files (JSON, base64 in the API)
+const b64dec = b => new TextDecoder().decode(Uint8Array.from(atob(b.replace(/\n/g, '')), c => c.charCodeAt(0)));
+const b64enc = s => { const u = new TextEncoder().encode(s); let b = ''; u.forEach(c => b += String.fromCharCode(c)); return btoa(b); };
+async function getFile(name) {
+  const r = await fetch(API + name + '?t=' + Date.now(), {cache: 'no-store', headers: {Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json'}});
+  if (r.status === 404) { delete sha[name]; return null; }
+  if (!r.ok) throw new Error(r.status === 401 ? 'token not accepted' : 'GitHub ' + r.status);
+  const j = await r.json(); sha[name] = j.sha; return JSON.parse(b64dec(j.content));
+}
+async function putFile(name, data, message) {
+  const body = {message, content: b64enc(JSON.stringify(data, null, 1))}; if (sha[name]) body.sha = sha[name];
+  const r = await fetch(API + name, {method: 'PUT', headers: {Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json'}, body: JSON.stringify(body)});
+  if (!r.ok) throw new Error('GitHub ' + r.status);
+  sha[name] = (await r.json()).content.sha;
+}
+// (read, change, write; again if the file moved meanwhile)
+async function update(name, change, message) {
+  for (let i = 0; i < 3; i++) {
+    const d = await getFile(name); const nd = change(d);
+    try { await putFile(name, nd, message); return nd; } catch (e) { if (!/409|422/.test(e.message) || i === 2) throw e; }
+  }
+}
+
+// ---- the page, built from the Mac's status (each act's controls), filled from settings.json
+let status = null, settings = null, built = '', tabNow = '', pending = {};
+function fieldHTML(a, f) {
+  const v = settings?.acts?.[a.name]?.[f.key] ?? '';
+  const id = `f-${a.name}-${f.key}`, data = `data-act="${a.name}" data-key="${f.key}"`;
+  const lab = `${esc(f.label)}<span class="saved" id="s-${id}"></span>`;
+  if (f.type === 'bool') return `<div class="chk"><span style="flex:1">${lab}</span>
+      <label class="switch"><input type="checkbox" id="${id}" ${data} ${v ? 'checked' : ''}><span></span></label></div>${f.help ? `<div class="help">${esc(f.help)}</div>` : ''}`;
+  return `<label for="${id}">${lab}</label>${f.type === 'textarea'
+      ? `<textarea id="${id}" ${data} spellcheck="false" rows="10">${esc(v)}</textarea>`
+      : `<input type="text" id="${id}" ${data} value="${esc(v)}" autocapitalize="none" autocorrect="off">`}${f.help ? `<div class="help">${esc(f.help)}</div>` : ''}`;
+}
+function actCard(a) {
+  const top = a.fields.filter(f => f.top).map(f => fieldHTML(a, f)).join('');
+  const rest = a.fields.filter(f => !f.top).map(f => fieldHTML(a, f)).join('');
+  const actions = (a.actions || []).map(x => `<div class="action" data-act="${a.name}" data-id="${x.id}">
+      <div class="name">${esc(x.label)}</div>${x.help ? `<div class="help">${esc(x.help)}</div>` : ''}
+      ${(x.fields || []).map(f => `<label>${esc(f.label)}</label><input type="text" data-arg="${f.key}" autocapitalize="none" autocorrect="off">`).join('')}
+      <div class="row" style="margin-top:10px"><button class="btn gold">${esc(x.label)}</button></div><div class="msg"></div></div>`).join('');
+  return `<div class="card" id="act-${a.name}">
+    <div class="head"><span class="led"></span><div class="txt"><div class="title">${esc(a.title)}</div>${a.about ? `<div class="about">${esc(a.about)}</div>` : ''}</div>
+      <label class="switch"><input type="checkbox" data-act="${a.name}" data-key="enabled"><span></span></label></div>
+    <div class="state"></div>
+    ${top ? `<div class="sec top">${top}</div>` : ''}${actions ? `<div class="sec">${actions}</div>` : ''}
+    ${status.results?.[a.name] ? `<details><summary>Latest results</summary><div class="res" id="res-${a.name}"></div></details>` : ''}
+    ${rest ? `<details><summary>Settings</summary>${rest}</details>` : ''}</div>`;
+}
+function tab(t) {
+  tabNow = t;
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('sel', b.dataset.tab === t));
+  document.querySelectorAll('#pages section, #sys').forEach(s => s.hidden = s.id !== t);
+}
+function build() {
+  const plain = status.acts.filter(a => !a.tab), own = status.acts.filter(a => a.tab);
+  $('#nav').innerHTML = `<button data-tab="p-acts">Acts</button>` + own.map(a => `<button data-tab="p-${a.name}">${esc(a.tab)}</button>`).join('') + `<button data-tab="sys">Phone</button>`;
+  $('#pages').innerHTML = `<section id="p-acts">${plain.map(actCard).join('') || '<div class="empty">No acts.</div>'}</section>`
+    + own.map(a => `<section id="p-${a.name}" hidden>${actCard(a)}</section>`).join('');
+  $('#nav').hidden = false;
+  document.querySelectorAll('nav button').forEach(b => b.onclick = () => tab(b.dataset.tab));
+  // settings: written to settings.json (the Mac applies them)
+  document.querySelectorAll('[data-key]').forEach(i => i.onchange = async () => {
+    const act = i.dataset.act, key = i.dataset.key, val = i.type === 'checkbox' ? i.checked : i.value;
+    const mark = $(`#s-f-${act}-${key}`); if (mark) mark.textContent = 'sending…';
+    pending[act + '.' + key] = val;
+    try {
+      settings = await update('settings.json', d => { d = d || {rev: 0, acts: {}}; d.acts[act] = d.acts[act] || {}; d.acts[act][key] = val;
+        d.rev = (d.rev || 0) + 1; d.by = 'phone'; d.updated = new Date().toISOString(); return d; }, `${act}: ${key} from the phone`);
+      if (mark) { mark.textContent = 'sent ✓ (Mac applies in ~5 s)'; setTimeout(() => mark.textContent = '', 4000); }
+    } catch (e) { if (mark) mark.textContent = ''; alert('Not sent: ' + e.message); }
+    delete pending[act + '.' + key];
+  });
+  // buttons: added to commands.json (the Mac runs each once)
+  document.querySelectorAll('.action').forEach(box => {
+    const btn = box.querySelector('button'), msg = box.querySelector('.msg');
+    btn.onclick = async () => {
+      const args = {}; box.querySelectorAll('[data-arg]').forEach(i => args[i.dataset.arg] = i.value);
+      const cid = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      btn.disabled = true; msg.className = 'msg'; msg.textContent = 'Sending…';
+      try {
+        await update('commands.json', d => { d = d || {commands: []};
+          d.commands = d.commands.filter(c => Date.now() / 1000 - c.at < 900).slice(-19);
+          d.commands.push({cid, act: box.dataset.act, action: box.dataset.id, args, at: Date.now() / 1000}); return d; }, `${box.dataset.act}: ${box.dataset.id} from the phone`);
+        msg.className = 'msg ok'; msg.textContent = 'Sent: the Mac runs it within about 10 s'; box.dataset.cid = cid;
+        box.querySelectorAll('[data-arg]').forEach(i => i.value = '');
+      } catch (e) { msg.className = 'msg bad'; msg.textContent = e.message; }
+      btn.disabled = false;
+    };
+  });
+  tab(document.getElementById(tabNow) ? tabNow : 'p-acts');
+}
+function fill() {
+  for (const a of status.acts) {
+    const c = $('#act-' + a.name); if (!c) continue;
+    const st = settings?.acts?.[a.name] || {};
+    const on = st.enabled ?? a.enabled;
+    c.querySelector('.head .led').className = 'led ' + (!on ? '' : a.ok ? 'ok' : 'bad');
+    const s = c.querySelector('.state'); s.textContent = on ? a.line : 'off'; s.className = 'state' + (on && !a.ok ? ' bad' : '');
+    c.querySelectorAll('[data-key]').forEach(i => {
+      const k = i.dataset.key; if (document.activeElement === i || (a.name + '.' + k) in pending || !(k in st)) return;
+      if (i.type === 'checkbox') i.checked = !!st[k]; else if (i.value !== String(st[k])) i.value = st[k];
+    });
+    const r = $('#res-' + a.name);
+    if (r) r.innerHTML = (status.results[a.name] || []).map(g => `<div>${esc(g.title)}<span>${esc(g.caption)}</span></div>`).join('') || '<div class="help">None yet.</div>';
+    c.querySelectorAll('.action[data-cid]').forEach(box => {
+      if ((status.done || []).includes(box.dataset.cid)) { const m = box.querySelector('.msg'); m.className = 'msg ok'; m.textContent = 'Done on the Mac ✓'; delete box.dataset.cid; }
+    });
+  }
+}
+async function refresh() {
+  try {
+    const [st, se] = await Promise.all([getFile('status.json'), getFile('settings.json')]);
+    if (!st) throw new Error('the Mac hasn\'t synced yet');
+    status = st; settings = se;
+    const age = Date.now() / 1000 - (st.updated_ts || 0);
+    // (status is written on change and every 5 minutes: over ~6 minutes old, the Mac is offline)
+    $('#macLed').className = 'led ' + (age < 400 ? (st.acts.some(a => a.enabled && !a.ok) ? 'bad' : 'ok') : 'wait');
+    $('#macTxt').textContent = age < 400 ? 'Mac online' : 'Mac offline? last ' + new Date(st.updated_ts * 1000).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+    const shape = st.acts.map(a => a.name + a.fields.length + (a.actions || []).length + (a.tab || '')).join();
+    if (shape !== built) { build(); built = shape; }
+    fill();
+  } catch (e) {
+    $('#macLed').className = 'led bad'; $('#macTxt').textContent = e.message;
+    if (/token/.test(e.message)) showConnect();
+  }
+}
+function showConnect() { $('#connect').hidden = false; $('#nav').hidden = true; $('#pages').innerHTML = ''; built = ''; }
+$('#tokSave').onclick = async () => {
+  token = $('#tok').value.trim(); if (!token) return;
+  try { await getFile('status.json'); try { localStorage.setItem('bsToken', token); } catch (e) {}
+    $('#connect').hidden = true; $('#tok').value = ''; refresh();
+  } catch (e) { $('#tokMsg').className = 'msg bad'; $('#tokMsg').textContent = e.message; }
+};
+$('#forget').onclick = () => { if (!confirm('Disconnect this phone? You\'ll need the token again.')) return;
+  try { localStorage.removeItem('bsToken'); } catch (e) {} token = ''; showConnect(); };
+if (token) refresh(); else showConnect();
+setInterval(() => { if (token && !document.hidden) refresh(); }, 6000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && token) refresh(); });
+</script>
+</body>
+</html>
