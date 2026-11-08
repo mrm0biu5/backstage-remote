@@ -23,6 +23,10 @@ body{padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset
 header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px}
 .brand img{width:30px;height:30px;border-radius:8px}
+.hdr{display:flex;align-items:center;gap:8px}
+.cog{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--dim);font-size:18px;line-height:1;cursor:pointer;display:grid;place-items:center;padding:0}
+.cog.sel{background:var(--card2);color:var(--text);border-color:var(--gold)}
+.ver{font-size:11px;font-weight:500;color:var(--faint);margin-left:6px;align-self:flex-end;margin-bottom:3px}
 .pill{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);background:var(--card);border:1px solid var(--line);padding:5px 10px;border-radius:99px;white-space:nowrap}
 .led{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:none}
 .led.ok{background:var(--green);box-shadow:0 0 8px var(--green)}.led.bad{background:var(--red);box-shadow:0 0 8px var(--red)}.led.wait{background:var(--amber)}
@@ -59,8 +63,9 @@ input:focus,textarea:focus{border-color:var(--gold)}
 </head>
 <body><div class="wrap">
 <header>
-  <div class="brand"><img src="icon-180.png" alt="">Backstage</div>
-  <div class="pill"><span class="led" id="macLed"></span><span id="macTxt">connecting…</span></div>
+  <div class="brand"><img src="icon-180.png" alt="">Backstage<span class="ver" id="ver"></span></div>
+  <div class="hdr"><div class="pill"><span class="led" id="macLed"></span><span id="macTxt">connecting…</span></div>
+    <button class="cog" id="cog" title="Settings" aria-label="Settings" hidden>⚙︎</button></div>
 </header>
 
 <section id="connect" hidden>
@@ -76,6 +81,13 @@ input:focus,textarea:focus{border-color:var(--gold)}
 <nav id="nav" hidden></nav>
 <div id="pages"></div>
 <section id="sys" hidden>
+  <div class="card"><div class="title">The Mac</div><div class="about" id="macInfo"></div></div>
+  <div class="card"><div class="row" style="justify-content:space-between"><div><div class="title">Playwright browser</div>
+      <div class="about">The hidden browser that works on Instagram for the acts. Show it on the Mac to sign in to a site.</div></div>
+      <button class="btn" id="browserBtn">Show</button></div><div class="msg" id="browserMsg"></div></div>
+  <div class="card"><div class="title">Logins</div>
+    <div class="about">Passwords and keys stay in the Mac's Keychain and never go through GitHub. Add or change them on the Mac's
+      own Backstage page (⚙︎ there).</div></div>
   <div class="card"><div class="title">This phone</div>
     <div class="about">Changes reach the Mac through GitHub within about 5 seconds; buttons run there within about 10.</div>
     <div class="row" style="margin-top:12px"><button class="btn" id="forget">Disconnect this phone</button></div></div>
@@ -83,6 +95,9 @@ input:focus,textarea:focus{border-color:var(--gold)}
 </div>
 
 <script>
+// (bump on every change, so the owner can tell which version the phone is showing)
+const VERSION = "1.1";
+document.getElementById("ver").textContent = "v" + VERSION;
 const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -139,17 +154,19 @@ function actCard(a) {
     ${status.results?.[a.name] ? `<details><summary>Latest results</summary><div class="res" id="res-${a.name}"></div></details>` : ''}
     ${rest ? `<details><summary>Settings</summary>${rest}</details>` : ''}</div>`;
 }
+let lastTab = '';
 function tab(t) {
-  tabNow = t;
+  tabNow = t; if (t !== 'sys') lastTab = t;
+  $('#cog').classList.toggle('sel', t === 'sys');
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('sel', b.dataset.tab === t));
   document.querySelectorAll('#pages section, #sys').forEach(s => s.hidden = s.id !== t);
 }
 function build() {
   const plain = status.acts.filter(a => !a.tab), own = status.acts.filter(a => a.tab);
-  $('#nav').innerHTML = `<button data-tab="p-acts">Acts</button>` + own.map(a => `<button data-tab="p-${a.name}">${esc(a.tab)}</button>`).join('') + `<button data-tab="sys">Phone</button>`;
+  $('#nav').innerHTML = (plain.length ? `<button data-tab="p-acts">Acts</button>` : '') + own.map(a => `<button data-tab="p-${a.name}">${esc(a.tab)}</button>`).join('');
   $('#pages').innerHTML = `<section id="p-acts">${plain.map(actCard).join('') || '<div class="empty">No acts.</div>'}</section>`
     + own.map(a => `<section id="p-${a.name}" hidden>${actCard(a)}</section>`).join('');
-  $('#nav').hidden = false;
+  $('#nav').hidden = false; $('#cog').hidden = false;
   document.querySelectorAll('nav button').forEach(b => b.onclick = () => tab(b.dataset.tab));
   // settings: written to settings.json (the Mac applies them)
   document.querySelectorAll('[data-key]').forEach(i => i.onchange = async () => {
@@ -180,7 +197,7 @@ function build() {
       btn.disabled = false;
     };
   });
-  tab(document.getElementById(tabNow) ? tabNow : 'p-acts');
+  tab(document.getElementById(tabNow) && (tabNow !== 'p-acts' || plain.length) ? tabNow : (plain.length ? 'p-acts' : 'p-' + own[0].name));
 }
 function fill() {
   for (const a of status.acts) {
@@ -212,17 +229,31 @@ async function refresh() {
     const shape = st.acts.map(a => a.name + a.fields.length + (a.actions || []).length + (a.tab || '')).join();
     if (shape !== built) { build(); built = shape; }
     fill();
+    $('#browserBtn').textContent = st.browserShown ? 'Hide' : 'Show';
+    $('#macInfo').textContent = `Last heard from ${new Date(st.updated_ts * 1000).toLocaleString([], {weekday: 'short', hour: '2-digit', minute: '2-digit'})}` +
+      ` · ${st.acts.length} effects · ${st.acts.filter(a => a.enabled).length} on`;
   } catch (e) {
     $('#macLed').className = 'led bad'; $('#macTxt').textContent = e.message;
     if (/token/.test(e.message)) showConnect();
   }
 }
-function showConnect() { $('#connect').hidden = false; $('#nav').hidden = true; $('#pages').innerHTML = ''; built = ''; }
+function showConnect() { $('#connect').hidden = false; $('#nav').hidden = true; $('#cog').hidden = true; $('#sys').hidden = true; $('#pages').innerHTML = ''; built = ''; }
 $('#tokSave').onclick = async () => {
   token = $('#tok').value.trim(); if (!token) return;
   try { await getFile('status.json'); try { localStorage.setItem('bsToken', token); } catch (e) {}
     $('#connect').hidden = true; $('#tok').value = ''; refresh();
   } catch (e) { $('#tokMsg').className = 'msg bad'; $('#tokMsg').textContent = e.message; }
+};
+$('#cog').onclick = () => tab(tabNow === 'sys' ? lastTab : 'sys');
+// (Playwright on the Mac: a command like any button, run by Backstage itself)
+$('#browserBtn').onclick = async () => {
+  const show = !status?.browserShown, m = $('#browserMsg');
+  m.className = 'msg'; m.textContent = 'Sending…';
+  try { await update('commands.json', d => { d = d || {commands: []}; d.commands = d.commands.filter(c => Date.now() / 1000 - c.at < 900).slice(-19);
+      d.commands.push({cid: Date.now().toString(36), act: '_backstage', action: 'browser', args: {do: show ? 'show' : 'hide'}, at: Date.now() / 1000}); return d; },
+      'Playwright from the phone');
+    m.className = 'msg ok'; m.textContent = (show ? 'Showing' : 'Hiding') + ' it on the Mac within about 10 s';
+  } catch (e) { m.className = 'msg bad'; m.textContent = e.message; }
 };
 $('#forget').onclick = () => { if (!confirm('Disconnect this phone? You\'ll need the token again.')) return;
   try { localStorage.removeItem('bsToken'); } catch (e) {} token = ''; showConnect(); };
