@@ -103,7 +103,7 @@ input:focus,textarea:focus{border-color:var(--gold)}
 
 <script>
 // (bump on every change, so the owner can tell which version the phone is showing)
-const VERSION = "1.5";
+const VERSION = "1.6";
 document.getElementById("ver").textContent = "v" + VERSION;
 const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
 const $ = s => document.querySelector(s);
@@ -164,11 +164,11 @@ function actCard(a) {
     ${rest ? `<details><summary>Settings</summary>${rest}</details>` : ''}</div>`;
 }
 // tricks that are web apps of their own (phone home-screen apps), listed with the acts on the home page
-const LINKS = [{title: 'AIcons', about: 'Spell a card with app icons on a fake home screen', url: 'https://mrm0biu5.github.io/aicons/'}];
+const LINKS = [{title: 'AIcons', about: 'Spell a card with app icons on a fake home screen', url: 'aicons://'}];
 function tilesHTML(acts) {
   return acts.map(a => `<button class="tile" data-go="${a.name}"><span class="led" id="tl-${a.name}"></span><div class="txt"><div class="title">${esc(a.tab || a.title)}</div>
       <div class="line" id="tt-${a.name}">${esc(a.about || '')}</div></div><span class="go">›</span></button>`).join('')
-    + LINKS.map(l => `<a class="tile" href="${l.url}" target="_blank" rel="noopener"><span class="led ok"></span><div class="txt"><div class="title">${esc(l.title)}</div>
+    + LINKS.map(l => `<a class="tile" href="${l.url}"${l.url.startsWith('http') ? ' target="_blank" rel="noopener"' : ''}><span class="led ok"></span><div class="txt"><div class="title">${esc(l.title)}</div>
       <div class="line">${esc(l.about)}</div></div><span class="go">↗</span></a>`).join('');
 }
 let lastTab = 'p-home';
