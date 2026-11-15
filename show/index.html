@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Show">
+<link rel="apple-touch-icon" href="../icon-180.png">
+<title>Show</title>
+<!--
+  Show: the performer's phone app for Backstage (web version, until the native companion app). Source in
+  MagicAppDev/backstage/show/, published at mrm0biu5.github.io/backstage-remote/show/ by scripts/publish-backstage-remote.sh.
+  - Launcher: the Newspaper, AIcons (aicons://), PixelsGhost (a Shortcut named "PixelsGhost"), the Backstage page.
+  - Newspaper: a fake Lock Screen (your own wallpaper, live clock). Hidden keypad over it (see KEYS); each value goes to
+    Backstage's Newspaper act through the private sync repo (commands.json, like the Backstage page's buttons). The
+    Mac makes the page and puts it in the repo (newspaper/lock.jpg); a double tap on the clock fades it in.
+  Token: a GitHub token for the private backstage-sync repo, kept only on this phone (as the Backstage page).
+-->
+<style>
+:root{--bg:#0b0b0e;--card:#16161b;--card2:#1e1e25;--line:#2a2a33;--text:#ececf1;--dim:#9a9aa6;--faint:#6b6b76;--gold:#d8b25a;--green:#35c26b;--red:#ef5350}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+.page{padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 24px);max-width:720px;margin:0 auto}
+h1{font-size:22px;margin:4px 0 14px;display:flex;align-items:baseline;gap:8px}h1 small{font-size:11px;color:var(--faint);font-weight:500}
+.tile{display:flex;align-items:center;gap:14px;width:100%;text-align:left;font:inherit;color:var(--text);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:10px;text-decoration:none;cursor:pointer}
+.tile .ic{font-size:26px;width:34px;text-align:center}.tile .t{font-weight:650;font-size:17px}.tile .s{color:var(--dim);font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px}
+label{display:block;font-size:13px;color:var(--dim);margin:10px 0 5px;font-weight:600}
+input[type=text],input[type=password],textarea{width:100%;font:inherit;font-size:16px;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;outline:none;-webkit-user-select:text;user-select:text}
+textarea{min-height:120px;font-size:14px}
+.btn{font:inherit;font-weight:600;border:0;border-radius:10px;padding:10px 14px;background:var(--card2);color:var(--text);cursor:pointer}.btn.gold{background:var(--gold);color:#1a1405}
+.help{font-size:12.5px;color:var(--faint);margin-top:4px}.msg{font-size:13px;margin-top:6px;min-height:1em}.ok{color:var(--green)}.bad{color:var(--red)}
+.back{background:none;border:0;color:var(--gold);font:inherit;font-weight:600;padding:4px 0 12px;cursor:pointer}
+table{width:100%;border-collapse:collapse;font-size:13.5px}td{padding:5px 4px;border-top:1px solid var(--line);vertical-align:top}td:first-child{color:var(--dim);width:38%}
+
+/* the fake Lock Screen */
+#lock{position:fixed;inset:0;background:#000 center/cover no-repeat;overflow:hidden;touch-action:none;display:none}
+#lock .layer{position:absolute;inset:0;background:center/cover no-repeat;transition:opacity 1.6s ease}
+#paper{opacity:0}
+#lock .date{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top) + 27px);text-align:center;font-size:21px;font-weight:600;color:rgba(255,255,255,.88);text-shadow:0 0 12px rgba(0,0,0,.18)}
+#lock .time{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top) + 50px);text-align:center;font-size:96px;line-height:1;font-weight:600;letter-spacing:-1px;color:rgba(255,255,255,.92);font-family:"SF Pro Rounded",-apple-system,sans-serif;text-shadow:0 0 18px rgba(0,0,0,.15)}
+#lock .round{position:absolute;bottom:calc(env(safe-area-inset-bottom) + 18px);width:50px;height:50px;border-radius:50%;background:rgba(40,40,40,.42);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);display:grid;place-items:center;transition:background .25s}
+#lock .round svg{width:22px;height:22px;fill:#fff}
+#torch{left:46px}#cam{right:46px}
+#lock .date,#lock .time{transition:color 1.6s ease}
+#lock.rev .date,#lock.rev .time{color:rgba(34,32,29,.86);text-shadow:none}  /* (dark on the paper, as you'd set the real clock) */
+#torch.blip{background:rgba(120,120,120,.62)}
+#lock .bar{position:absolute;bottom:8px;left:50%;width:134px;height:5px;margin-left:-67px;border-radius:3px;background:rgba(255,255,255,.85)}
+#peek{position:absolute;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom) + 84px);background:rgba(0,0,0,.72);border-radius:12px;padding:8px 10px;font-size:12px;line-height:1.45;color:#ddd;display:none}
+#peek b{color:#fff}
+</style>
+</head>
+<body>
+
+<div id="connect" class="page" hidden>
+  <h1>Show</h1>
+  <div class="card">
+    <div class="help" style="color:var(--dim)">Paste the same GitHub token as the Backstage page (it can read and write the private backstage-sync repo). It's kept only on this phone.</div>
+    <label>GitHub token</label><input type="password" id="tok" autocomplete="off" placeholder="github_pat_…">
+    <div style="margin-top:10px"><button class="btn gold" id="tokSave">Connect</button></div>
+    <div class="msg" id="tokMsg"></div>
+  </div>
+</div>
+
+<div id="hub" class="page" hidden>
+  <h1>Show <small id="ver"></small></h1>
+  <button class="tile" id="goPaper"><span class="ic">📰</span><span><div class="t">Newspaper</div><div class="s">Fake Lock Screen; cue the values, double tap the clock to reveal</div></span></button>
+  <a class="tile" href="aicons://"><span class="ic">🃏</span><span><div class="t">AIcons</div><div class="s">Opens the app</div></span></a>
+  <a class="tile" href="shortcuts://run-shortcut?name=PixelsGhost"><span class="ic">👻</span><span><div class="t">PixelsGhost</div><div class="s">Runs your Shortcut named “PixelsGhost” (Open App → PixelsGhost)</div></span></a>
+  <a class="tile" href="../"><span class="ic">🎛</span><span><div class="t">Backstage</div><div class="s">The Mac's page: every act, settings, Logins</div></span></a>
+  <button class="tile" id="goSet"><span class="ic">⚙︎</span><span><div class="t">Newspaper set-up</div><div class="s">Wallpaper, cue order, places, values by hand</div></span></button>
+  <div class="help" id="macLine"></div>
+</div>
+
+<div id="setup" class="page" hidden>
+  <button class="back" id="setBack">‹ Show</button>
+  <div class="card">
+    <div class="t" style="font-weight:650">Lock Screen picture</div>
+    <div class="help">Choose the same picture as your real Lock Screen, so the fake one matches.</div>
+    <div style="margin-top:10px;display:flex;gap:8px"><label class="btn" style="margin:0;color:var(--text)">Choose picture<input type="file" id="wp" accept="image/*" hidden></label>
+      <button class="btn" id="wpClear">Plain black</button></div>
+  </div>
+  <div class="card">
+    <div style="font-weight:650">Values by hand (also for rehearsal)</div>
+    <table id="vals"></table>
+    <label>Celebrity</label><input type="text" id="hCeleb" placeholder="Usually from Inject">
+    <label>Card</label><input type="text" id="hCard" placeholder="7H, queen of spades…">
+    <label>Place</label><input type="text" id="hPlace">
+    <label>Time (HH:MM)</label><input type="text" id="hTime" inputmode="numeric">
+    <label>Lottery numbers</label><input type="text" id="hNumbers" inputmode="numeric">
+    <label>Date (dd/mm/yy)</label><input type="text" id="hDate" inputmode="numeric">
+    <div style="margin-top:10px;display:flex;gap:8px"><button class="btn gold" id="hSend">Send</button><button class="btn" id="hClear">Clear all on the Mac</button></div>
+    <div class="msg" id="hMsg"></div>
+  </div>
+  <div class="card">
+    <div style="font-weight:650">Hidden keypad</div>
+    <div class="help" style="color:var(--dim)">On the fake Lock Screen, the area under the clock is an invisible phone keypad: 1 2 3 / 4 5 6 / 7 8 9 / * 0 #.
+      Type a value and tap <b>#</b> to send it to the next slot below; the torch button glows briefly when it's sent. <b>*</b> = a space
+      between numbers, <b>* *</b> = start the entry again. Hold anywhere for a second to peek (values, what you've typed); let go to hide it.
+      <b>Double tap the clock</b> = reveal the newspaper; <b>hold the clock 2 s</b> = back to your picture; <b>hold the torch 2 s</b> = back here.</div>
+    <label>Cue order (slots, in the order you'll type them)</label><input type="text" id="order">
+    <div class="help">card · time · date · numbers · place · vol · issue. Card: value then suit digit, CHaSeD 1♣ 2♥ 3♠ 4♦ (74 = 7♦, 131 = K♣). Time: 426 or 1626. Date: ddmmyy. Place: its number in the list below.</div>
+    <label>Places (one per line; place 1 is the first)</label><textarea id="places"></textarea>
+    <div style="margin-top:10px"><button class="btn gold" id="saveSet">Save</button> <span class="msg ok" id="setMsg"></span></div>
+  </div>
+  <div class="card"><button class="btn" id="forget">Disconnect this phone</button></div>
+</div>
+
+<div id="lock">
+  <div class="layer" id="wall"></div><div class="layer" id="paper"></div>
+  <div class="date" id="lDate"></div><div class="time" id="lTime"></div>
+  <div class="round" id="torch"><svg viewBox="0 0 24 24"><path d="M8 2h8v4l-2 3v13h-4V9L8 6z"/></svg></div>
+  <div class="round" id="cam"><svg viewBox="0 0 24 24"><path d="M9 4l-1.5 2H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-3.5L15 4zm3 4.5a4.5 4.5 0 110 9 4.5 4.5 0 010-9z"/></svg></div>
+  <div class="bar"></div>
+  <div id="peek"></div>
+</div>
+
+<script>
+const VERSION = "1.0";
+document.getElementById('ver').textContent = 'v' + VERSION;
+const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = {get: (k, d) => { try { const v = localStorage.getItem('show.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+               set: (k, v) => { try { localStorage.setItem('show.' + k, JSON.stringify(v)); } catch (e) {} }};
+let token = store.get('token', '');
+const SLOTS = ['card', 'time', 'date', 'numbers', 'place', 'vol', 'issue'];
+const DEFAULT_PLACES = 'Paris\nNew York\nLondon\nRome\nTokyo\nSydney\nCairo\nVenice\nRio de Janeiro';
+
+// ---- GitHub (as the Backstage page)
+const sha = {};
+const b64dec = b => new TextDecoder().decode(Uint8Array.from(atob(b.replace(/\n/g, '')), c => c.charCodeAt(0)));
+const b64enc = s => { const u = new TextEncoder().encode(s); let b = ''; u.forEach(c => b += String.fromCharCode(c)); return btoa(b); };
+const H = () => ({Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json'});
+async function getFile(name) {
+  const r = await fetch(API + name + '?t=' + Date.now(), {cache: 'no-store', headers: H()});
+  if (r.status === 404) { delete sha[name]; return null; }
+  if (!r.ok) throw new Error(r.status === 401 ? 'token not accepted' : 'GitHub ' + r.status);
+  const j = await r.json(); sha[name] = j.sha; return JSON.parse(b64dec(j.content));
+}
+async function putFile(name, data, message) {
+  const body = {message, content: b64enc(JSON.stringify(data, null, 1))}; if (sha[name]) body.sha = sha[name];
+  const r = await fetch(API + name, {method: 'PUT', headers: H(), body: JSON.stringify(body)});
+  if (!r.ok) throw new Error('GitHub ' + r.status);
+  sha[name] = (await r.json()).content.sha;
+}
+async function command(action, args) {
+  for (let i = 0; i < 3; i++) {
+    let d = await getFile('commands.json'); d = d || {commands: []};
+    d.commands = d.commands.filter(c => Date.now() / 1000 - c.at < 900).slice(-19);
+    d.commands.push({cid: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), act: 'newspaper', action, args, at: Date.now() / 1000});
+    try { await putFile('commands.json', d, 'newspaper: ' + action + ' from Show'); return; } catch (e) { if (!/409|422/.test(e.message) || i === 2) throw e; }
+  }
+}
+// (one send at a time; values typed meanwhile go together in the next)
+let pendingArgs = {}, sending = false, sentLog = [];
+function send(args) { Object.assign(pendingArgs, args); pump(); }
+async function pump() {
+  if (sending || !Object.keys(pendingArgs).length) return;
+  sending = true; const a = pendingArgs; pendingArgs = {};
+  try { await command('set', a); sentLog.push(Object.entries(a).map(([k, v]) => k + ' ' + v).join(', ') + ' ✓'); blip(); }
+  catch (e) { sentLog.push('NOT SENT: ' + e.message); Object.assign(pendingArgs, a, pendingArgs); setTimeout(pump, 3000); }
+  sending = false; if (Object.keys(pendingArgs).length) pump();
+}
+
+// ---- screens
+function show(id) { for (const s of ['connect', 'hub', 'setup']) $('#' + s).hidden = s !== id; $('#lock').style.display = id === 'lock' ? 'block' : 'none'; if (id === 'lock') startLock(); else stopLock(); }
+$('#tokSave').onclick = async () => {
+  token = $('#tok').value.trim(); if (!token) return;
+  try { await getFile('status.json'); store.set('token', token); $('#tok').value = ''; show('hub'); hubInfo(); }
+  catch (e) { $('#tokMsg').className = 'msg bad'; $('#tokMsg').textContent = e.message; }
+};
+$('#forget').onclick = () => { if (confirm('Disconnect this phone? You\'ll need the token again.')) { store.set('token', ''); token = ''; show('connect'); } };
+$('#goPaper').onclick = () => show('lock');
+$('#goSet').onclick = () => { fillSetup(); show('setup'); };
+$('#setBack').onclick = () => { show('hub'); hubInfo(); };
+async function hubInfo() {
+  try { const st = await getFile('status.json'); const age = Date.now() / 1000 - (st.updated_ts || 0);
+    const np = (st.acts || []).find(a => a.name === 'newspaper');
+    $('#macLine').innerHTML = (age < 400 ? '🟢 Mac online' : '🟠 Mac offline?') + (np ? ' · Newspaper: ' + esc(np.line) : ' · Newspaper act not loaded on the Mac');
+  } catch (e) { $('#macLine').textContent = e.message; }
+}
+
+// ---- set-up
+function fillSetup() {
+  $('#order').value = store.get('order', 'card time date numbers').trim();
+  $('#places').value = store.get('places', DEFAULT_PLACES);
+  readLatest().then(() => {
+    const v = latest?.values || {};
+    $('#vals').innerHTML = '<tr><td colspan=2 class="help">On the Mac\'s last page:</td></tr>' +
+      ['card', 'place', 'time', 'celeb', 'numbers', 'date'].map(k => `<tr><td>${k}</td><td>${esc(v[k] || '—')}</td></tr>`).join('');
+  });
+}
+$('#saveSet').onclick = () => {
+  const order = $('#order').value.toLowerCase().split(/[\s,·]+/).filter(s => SLOTS.includes(s));
+  store.set('order', order.join(' ')); store.set('places', $('#places').value.trim());
+  $('#order').value = order.join(' '); $('#setMsg').textContent = 'Saved'; setTimeout(() => $('#setMsg').textContent = '', 2000);
+};
+$('#hSend').onclick = async () => {
+  const a = {}; for (const [k, id] of [['celeb', 'hCeleb'], ['card', 'hCard'], ['place', 'hPlace'], ['time', 'hTime'], ['numbers', 'hNumbers'], ['date', 'hDate']])
+    if ($('#' + id).value.trim()) a[k] = $('#' + id).value.trim();
+  if (!Object.keys(a).length) return;
+  $('#hMsg').className = 'msg'; $('#hMsg').textContent = 'Sending…';
+  try { await command('set', a); $('#hMsg').className = 'msg ok'; $('#hMsg').textContent = 'Sent: the page is ready in about 20 s';
+    document.querySelectorAll('#setup input[type=text][id^=h]').forEach(i => i.value = ''); }
+  catch (e) { $('#hMsg').className = 'msg bad'; $('#hMsg').textContent = e.message; }
+};
+$('#hClear').onclick = async () => { try { await command('clear', {}); $('#hMsg').className = 'msg ok'; $('#hMsg').textContent = 'Cleared on the Mac'; } catch (e) { $('#hMsg').textContent = e.message; } };
+
+// wallpaper: kept in IndexedDB (too big for localStorage)
+function db() { return new Promise((ok, no) => { const r = indexedDB.open('show', 1); r.onupgradeneeded = () => r.result.createObjectStore('files'); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); }); }
+async function dbPut(k, v) { const d = await db(); return new Promise(ok => { const t = d.transaction('files', 'readwrite'); t.objectStore('files').put(v, k); t.oncomplete = ok; }); }
+async function dbGet(k) { const d = await db(); return new Promise(ok => { const r = d.transaction('files').objectStore('files').get(k); r.onsuccess = () => ok(r.result); r.onerror = () => ok(null); }); }
+$('#wp').onchange = async e => { const f = e.target.files[0]; if (!f) return; await dbPut('wallpaper', f); $('#setMsg').textContent = 'Picture saved'; };
+$('#wpClear').onclick = async () => { await dbPut('wallpaper', null); $('#setMsg').textContent = 'Plain black'; };
+
+// ---- the fake Lock Screen
+let clockT = null, pollT = null, latest = null, paperURL = null, paperRev = 0, entry = '', slotIx = 0, revealed = false;
+async function startLock() {
+  const w = await dbGet('wallpaper').catch(() => null);
+  $('#wall').style.backgroundImage = w ? `url(${URL.createObjectURL(w)})` : 'none';
+  $('#paper').style.opacity = 0; $('#lock').classList.remove('rev'); revealed = false; entry = ''; slotIx = 0; sentLog = [];
+  tickClock(); clockT = setInterval(tickClock, 1000);
+  poll(); pollT = setInterval(poll, 4000);
+}
+function stopLock() { clearInterval(clockT); clearInterval(pollT); }
+function tickClock() {
+  const d = new Date();
+  $('#lTime').textContent = d.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit', hour12: false}).replace(/^0/, '');
+  $('#lDate').textContent = d.toLocaleDateString([], {weekday: 'long', day: 'numeric', month: 'long'});
+}
+async function readLatest() { try { latest = await getFile('newspaper/latest.json'); } catch (e) {} return latest; }
+async function poll() {
+  if (document.hidden) return;
+  await readLatest();
+  if (latest && latest.rev !== paperRev) {        // (a new page: fetched now so the reveal is instant)
+    try {
+      const r = await fetch(API + 'newspaper/lock.jpg?t=' + Date.now(), {cache: 'no-store', headers: {Authorization: 'Bearer ' + token, Accept: 'application/vnd.github.raw'}});
+      if (r.ok) { const b = await r.blob(); if (paperURL) URL.revokeObjectURL(paperURL); paperURL = URL.createObjectURL(b); paperRev = latest.rev;
+        await new Promise(ok => { const i = new Image(); i.onload = i.onerror = ok; i.src = paperURL; });
+        $('#paper').style.backgroundImage = `url(${paperURL})`; }
+    } catch (e) {}
+  }
+}
+function order() { return store.get('order', 'card time date numbers').split(' ').filter(Boolean); }
+function blip() { $('#torch').classList.add('blip'); setTimeout(() => $('#torch').classList.remove('blip'), 450); }
+
+// (an entry → the slot's value; null if it doesn't make sense)
+function parse(slot, e) {
+  const d = e.replace(/\*/g, ' ').trim();
+  if (slot === 'card') { const m = d.replace(/\s/g, '').match(/^(1[0-3]|[1-9])([1-4])$/); if (!m) return null;
+    return ({1: 'A', 11: 'J', 12: 'Q', 13: 'K'}[m[1]] || m[1]) + 'CHSD'[+m[2] - 1]; }
+  if (slot === 'time') { const s = d.replace(/\s/g, ''); if (!/^\d{3,4}$/.test(s)) return null; const h = +s.slice(0, -2), m = +s.slice(-2);
+    return h < 24 && m < 60 ? h + ':' + String(m).padStart(2, '0') : null; }
+  if (slot === 'date') { const s = d.replace(/\s/g, ''); if (!/^\d{6}(\d\d)?$/.test(s)) return null; return s.slice(0, 2) + '/' + s.slice(2, 4) + '/' + s.slice(4); }
+  if (slot === 'numbers') return d ? d.split(/\s+/).join(' ') : null;
+  if (slot === 'place') { const p = store.get('places', DEFAULT_PLACES).split('\n').map(s => s.trim()).filter(Boolean); return p[+d - 1] || null; }
+  return /^\d+$/.test(d) ? d : null;
+}
+const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
+function keyAt(x, y) {          // (the invisible keypad: under the clock, above the round buttons)
+  const top = innerHeight * .30, bottom = innerHeight * .86;
+  if (y < top || y > bottom) return null;
+  return KEYS[Math.min(3, Math.floor((y - top) / ((bottom - top) / 4))) * 3 + Math.min(2, Math.floor(x / (innerWidth / 3)))];
+}
+function press(k) {
+  const o = order(), slot = o[slotIx];
+  if (k === '#') {
+    if (!slot) return;
+    const v = parse(slot, entry);
+    if (v === null) { sentLog.push(`${slot}: "${entry}" not understood`); entry = ''; return; }
+    send({[slot]: v}); entry = ''; slotIx++;
+  } else if (k === '*') entry = entry.endsWith('*') ? '' : entry + '*';
+  else entry += k;
+}
+function peekText() {
+  const o = order(), v = latest?.values || {};
+  return `<b>next: ${esc(o[slotIx] || 'all done')}</b> · typed: <b>${esc(entry.replace(/\*/g, '␣') || '—')}</b><br>` +
+    o.map((s, i) => `${i < slotIx ? '✓' : '·'} ${s}`).join('  ') + '<br>' +
+    'Mac page: ' + (['card', 'place', 'time', 'celeb', 'numbers', 'date'].filter(k => v[k]).map(k => k + ' ' + esc(v[k])).join(', ') || 'samples') +
+    (paperRev ? ' (loaded)' : ' (not loaded yet)') + '<br>' + sentLog.slice(-3).map(esc).join('<br>');
+}
+
+// gestures
+let holdT = null, start = null, lastClockTap = 0;
+const lock = $('#lock');
+lock.addEventListener('touchstart', e => {
+  e.preventDefault(); const t = e.touches[0]; start = {x: t.clientX, y: t.clientY, at: Date.now(), el: e.target.closest('#torch, #lTime')};
+  clearTimeout(holdT);
+  if (start.el?.id === 'torch') holdT = setTimeout(() => { start = null; show('hub'); hubInfo(); }, 2000);
+  else if (start.el?.id === 'lTime') holdT = setTimeout(() => { start = null; revealed = false; $('#paper').style.opacity = 0; lock.classList.remove('rev'); }, 2000);
+  else holdT = setTimeout(() => { if (start) { start.peek = true; $('#peek').innerHTML = peekText(); $('#peek').style.display = 'block'; } }, 1000);
+}, {passive: false});
+lock.addEventListener('touchend', e => {
+  e.preventDefault(); clearTimeout(holdT); $('#peek').style.display = 'none';
+  if (!start || start.peek || Date.now() - start.at > 900) { start = null; return; }
+  if (start.el?.id === 'lTime') {
+    if (Date.now() - lastClockTap < 400) { if (paperRev) { revealed = true; $('#paper').style.opacity = 1; lock.classList.add('rev'); } lastClockTap = 0; }
+    else lastClockTap = Date.now();
+  } else if (!start.el) { const k = keyAt(start.x, start.y); if (k) press(k); }
+  start = null;
+}, {passive: false});
+document.addEventListener('visibilitychange', () => { if (!document.hidden && $('#lock').style.display === 'block') poll(); });
+
+if (!token) show('connect'); else { show('hub'); hubInfo(); }
+</script>
+</body>
+</html>
