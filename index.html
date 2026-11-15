@@ -103,7 +103,7 @@ input:focus,textarea:focus{border-color:var(--gold)}
 
 <script>
 // (bump on every change, so the owner can tell which version the phone is showing)
-const VERSION = "1.6";
+const VERSION = "1.7";
 document.getElementById("ver").textContent = "v" + VERSION;
 const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
 const $ = s => document.querySelector(s);
@@ -140,9 +140,12 @@ function fieldHTML(a, f) {
   const v = settings?.acts?.[a.name]?.[f.key] ?? '';
   const id = `f-${a.name}-${f.key}`, data = `data-act="${a.name}" data-key="${f.key}"`;
   const lab = `${esc(f.label)}<span class="saved" id="s-${id}"></span>`;
-  if (f.type === 'bool') return `<div class="chk"><span style="flex:1">${lab}</span>
+  const head = f.group ? `<div style="font-weight:650;font-size:14.5px;margin:16px 0 4px">${esc(f.group)}</div>` : '';
+  if (f.type === 'range') return head + `<label for="${id}">${esc(f.label)} <b style="color:var(--gold)" id="rv-${id}">${esc(v)}${esc(f.unit || '')}</b><span class="saved" id="s-${id}"></span></label>
+      <input type="range" id="${id}" ${data} data-unit="${esc(f.unit || '')}" min="${f.min}" max="${f.max}" step="${f.step || 1}" value="${esc(v)}" style="width:100%;accent-color:var(--gold)">${f.help ? `<div class="help">${esc(f.help)}</div>` : ''}`;
+  if (f.type === 'bool') return head + `<div class="chk"><span style="flex:1">${lab}</span>
       <label class="switch"><input type="checkbox" id="${id}" ${data} ${v ? 'checked' : ''}><span></span></label></div>${f.help ? `<div class="help">${esc(f.help)}</div>` : ''}`;
-  return `<label for="${id}">${lab}</label>${f.type === 'textarea'
+  return head + `<label for="${id}">${lab}</label>${f.type === 'textarea'
       ? `<textarea id="${id}" ${data} spellcheck="false" rows="10">${esc(v)}</textarea>`
       : `<input type="text" id="${id}" ${data} value="${esc(v)}" autocapitalize="none" autocorrect="off">`}${f.help ? `<div class="help">${esc(f.help)}</div>` : ''}`;
 }
@@ -187,7 +190,7 @@ function build() {
   document.querySelectorAll('.back').forEach(b => b.onclick = () => tab('p-home'));
   // settings: written to settings.json (the Mac applies them)
   document.querySelectorAll('[data-key]').forEach(i => i.onchange = async () => {
-    const act = i.dataset.act, key = i.dataset.key, val = i.type === 'checkbox' ? i.checked : i.value;
+    const act = i.dataset.act, key = i.dataset.key, val = i.type === 'checkbox' ? i.checked : i.type === 'range' ? +i.value : i.value;
     const mark = $(`#s-f-${act}-${key}`); if (mark) mark.textContent = 'sending…';
     pending[act + '.' + key] = val;
     try {
@@ -197,6 +200,7 @@ function build() {
     } catch (e) { if (mark) mark.textContent = ''; alert('Not sent: ' + e.message); }
     delete pending[act + '.' + key];
   });
+  document.querySelectorAll('input[type=range][data-key]').forEach(i => i.oninput = () => { $('#rv-' + i.id).textContent = i.value + i.dataset.unit; });
   // buttons: added to commands.json (the Mac runs each once)
   document.querySelectorAll('.action').forEach(box => {
     const btn = box.querySelector('button'), msg = box.querySelector('.msg');
@@ -228,6 +232,7 @@ function fill() {
     c.querySelectorAll('[data-key]').forEach(i => {
       const k = i.dataset.key; if (document.activeElement === i || (a.name + '.' + k) in pending || !(k in st)) return;
       if (i.type === 'checkbox') i.checked = !!st[k]; else if (i.value !== String(st[k])) i.value = st[k];
+      if (i.type === 'range') $('#rv-' + i.id).textContent = i.value + i.dataset.unit;
     });
     const r = $('#res-' + a.name);
     if (r) r.innerHTML = (status.results[a.name] || []).map(g => `<div>${esc(g.title)}<span>${esc(g.caption)}</span></div>`).join('') || '<div class="help">None yet.</div>';
