@@ -103,7 +103,7 @@ input:focus,textarea:focus{border-color:var(--gold)}
 
 <script>
 // (bump on every change, so the owner can tell which version the phone is showing)
-const VERSION = "1.7";
+const VERSION = "1.8";
 document.getElementById("ver").textContent = "v" + VERSION;
 const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
 const $ = s => document.querySelector(s);
@@ -152,7 +152,7 @@ function fieldHTML(a, f) {
 function actCard(a) {
   const top = a.fields.filter(f => f.top).map(f => fieldHTML(a, f)).join('');
   const rest = a.fields.filter(f => !f.top).map(f => fieldHTML(a, f)).join('');
-  const actions = (a.actions || []).map(x => `<div class="action" data-act="${a.name}" data-id="${x.id}">
+  const actions = (a.actions || []).map(x => `<div class="action" data-act="${a.name}" data-id="${x.id}" data-client="${esc(x.client || '')}">
       <div class="name">${esc(x.label)}</div>${x.help ? `<div class="help">${esc(x.help)}</div>` : ''}
       ${(x.fields || []).map(f => `<label>${esc(f.label)}</label><input type="text" data-arg="${f.key}" autocapitalize="none" autocorrect="off">`).join('')}
       <div class="row" style="margin-top:10px"><button class="btn gold">${esc(x.label)}</button></div><div class="msg"></div></div>`).join('');
@@ -204,6 +204,7 @@ function build() {
   // buttons: added to commands.json (the Mac runs each once)
   document.querySelectorAll('.action').forEach(box => {
     const btn = box.querySelector('button'), msg = box.querySelector('.msg');
+    if (box.dataset.client === 'np-preview') { btn.onclick = () => openPreview(box.dataset.act); return; }
     btn.onclick = async () => {
       const args = {}; box.querySelectorAll('[data-arg]').forEach(i => args[i.dataset.arg] = i.value);
       const cid = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -253,6 +254,18 @@ function fill() {
       if ((status.done || []).includes(box.dataset.cid)) { const m = box.querySelector('.msg'); m.className = 'msg ok'; m.textContent = 'Done on the Mac ✓'; delete box.dataset.cid; }
     });
   }
+}
+// (the Newspaper's live Look preview: np-preview.js, next to this page; its files from the sync repo)
+async function openPreview(act) {
+  if (!window.NPPreview) await new Promise((ok, no) => { const sc = document.createElement('script');
+    sc.src = 'np-preview.js?v=' + VERSION; sc.onload = ok; sc.onerror = () => no(new Error('no preview script')); document.head.appendChild(sc); });
+  const a = status.acts.find(x => x.name === act), fields = a.fields.filter(f => f.type === 'range');
+  const st = settings?.acts?.[act] || {};
+  NPPreview.open({fields, values: Object.fromEntries(fields.map(f => [f.key, st[f.key] ?? f.min])),
+    load: name => fetch(API + 'newspaper/preview/' + name + '?t=' + Date.now(), {cache: 'no-store', headers: {Authorization: 'Bearer ' + token, Accept: 'application/vnd.github.raw'}})
+      .then(r => { if (!r.ok) throw new Error('no page yet (GitHub ' + r.status + ')'); return r.blob(); }),
+    save: async values => { settings = await update('settings.json', d => { d = d || {rev: 0, acts: {}}; d.acts[act] = Object.assign(d.acts[act] || {}, values);
+      d.rev = (d.rev || 0) + 1; d.by = 'phone'; d.updated = new Date().toISOString(); return d; }, `${act}: look from the phone`); }});
 }
 async function refresh() {
   try {
