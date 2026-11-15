@@ -103,7 +103,7 @@ input:focus,textarea:focus{border-color:var(--gold)}
 
 <script>
 // (bump on every change, so the owner can tell which version the phone is showing)
-const VERSION = "1.8";
+const VERSION = "1.9";
 document.getElementById("ver").textContent = "v" + VERSION;
 const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
 const $ = s => document.querySelector(s);
@@ -204,7 +204,7 @@ function build() {
   // buttons: added to commands.json (the Mac runs each once)
   document.querySelectorAll('.action').forEach(box => {
     const btn = box.querySelector('button'), msg = box.querySelector('.msg');
-    if (box.dataset.client === 'np-preview') { btn.onclick = () => openPreview(box.dataset.act); return; }
+    if (box.dataset.client === 'np-preview' || box.dataset.client === 'np-template') { btn.onclick = () => openPreview(box.dataset.act, box.dataset.client === 'np-template'); return; }
     btn.onclick = async () => {
       const args = {}; box.querySelectorAll('[data-arg]').forEach(i => args[i.dataset.arg] = i.value);
       const cid = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -256,12 +256,12 @@ function fill() {
   }
 }
 // (the Newspaper's live Look preview: np-preview.js, next to this page; its files from the sync repo)
-async function openPreview(act) {
+async function openPreview(act, template) {
   if (!window.NPPreview) await new Promise((ok, no) => { const sc = document.createElement('script');
     sc.src = 'np-preview.js?v=' + VERSION; sc.onload = ok; sc.onerror = () => no(new Error('no preview script')); document.head.appendChild(sc); });
   const a = status.acts.find(x => x.name === act), fields = a.fields.filter(f => f.type === 'range');
   const st = settings?.acts?.[act] || {};
-  NPPreview.open({fields, values: Object.fromEntries(fields.map(f => [f.key, st[f.key] ?? f.min])),
+  NPPreview.open({template, fields, values: Object.fromEntries(fields.map(f => [f.key, st[f.key] ?? f.min])),
     load: name => fetch(API + 'newspaper/preview/' + name + '?t=' + Date.now(), {cache: 'no-store', headers: {Authorization: 'Bearer ' + token, Accept: 'application/vnd.github.raw'}})
       .then(r => { if (!r.ok) throw new Error('no page yet (GitHub ' + r.status + ')'); return r.blob(); }),
     save: async values => { settings = await update('settings.json', d => { d = d || {rev: 0, acts: {}}; d.acts[act] = Object.assign(d.acts[act] || {}, values);

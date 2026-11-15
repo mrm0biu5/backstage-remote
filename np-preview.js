@@ -59,12 +59,15 @@ window.NPPreview = (() => {
   const css = `
   #npp{position:fixed;inset:0;z-index:9999;background:#000;display:flex;flex-direction:column;font:14px -apple-system,sans-serif;color:#eee}
   #npp .view{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;display:flex;justify-content:center}
-  #npp canvas{width:100%;max-width:600px;height:auto;display:block;align-self:flex-start}
-  #npp.zoom canvas{width:250%;max-width:none}
+  #npp .pg{position:relative;width:100%;max-width:600px;align-self:flex-start}
+  #npp canvas,#npp .tpl{width:100%;height:auto;display:block}
+  #npp .tpl{position:absolute;inset:0;display:none}#npp.tplon .tpl{display:block}
+  #npp.zoom .pg{width:250%;max-width:none}
   #npp .sheet{background:rgba(20,20,26,.94);border-top:1px solid #333;padding:8px 14px calc(env(safe-area-inset-bottom) + 10px);max-height:44vh;overflow:auto}
   #npp.hide .sheet .sl{display:none}
-  #npp .bar{display:flex;gap:8px;align-items:center;margin-bottom:4px}
-  #npp .bar b{flex:1;font-size:13px;color:#aaa;font-weight:500}
+  #npp .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:4px}
+  #npp .bar b{flex-basis:100%;font-size:13px;color:#aaa;font-weight:500}
+  #npp .bar button{flex:1}
   #npp button{font:inherit;font-weight:600;border:0;border-radius:9px;padding:8px 12px;background:#2a2a33;color:#eee}
   #npp button.gold{background:#d8b25a;color:#1a1405}
   #npp label{display:flex;justify-content:space-between;font-size:12.5px;color:#bbb;margin-top:8px}
@@ -90,11 +93,11 @@ window.NPPreview = (() => {
 
   // fields: the act's range fields ({key, label, min, max, step, unit}); values: {key: number};
   // load(name) → Blob of a preview file; save(values) → Promise (stores the sliders; the Mac then makes the page)
-  async function open({fields, values, load, save}) {
+  async function open({fields, values, load, save, template}) {
     if (!document.getElementById('npp-css')) { const st = document.createElement('style'); st.id = 'npp-css'; st.textContent = css; document.head.appendChild(st); }
     const box = document.createElement('div'); box.id = 'npp';
-    box.innerHTML = `<div class="view"><canvas></canvas></div><div class="sheet"><div class="bar"><b>Loading the page…</b>
-      <button data-a="hide">Sliders</button><button data-a="close">Cancel</button><button class="gold" data-a="apply">Apply</button></div>
+    box.innerHTML = `<div class="view"><div class="pg"><canvas></canvas><img class="tpl" alt=""></div></div><div class="sheet"><div class="bar"><b>Loading the page…</b>
+      <button data-a="tpl">Template</button><button data-a="hide">Sliders</button><button data-a="close">Cancel</button><button class="gold" data-a="apply">Apply</button></div>
       <div class="sl">${fields.map(f => `<label>${f.label}<i id="npv-${f.key}"></i></label>
       <input type="range" data-k="${f.key}" min="${f.min}" max="${f.max}" step="${f.step || 1}" value="${values[f.key]}">`).join('')}</div></div>`;
     document.body.appendChild(box);
@@ -104,12 +107,20 @@ window.NPPreview = (() => {
     const status = box.querySelector('.bar b'), close = () => box.remove();
     box.querySelector('[data-a=close]').onclick = close;
     box.querySelector('[data-a=hide]').onclick = () => box.classList.toggle('hide');
+    // (the template: which trick value goes where, over the page; loaded the first time it's shown)
+    const tpl = box.querySelector('.tpl'), tb = box.querySelector('[data-a=tpl]');
+    const showTpl = async on => {
+      if (on && !tpl.src) { try { tpl.src = URL.createObjectURL(await load('template.jpg')); } catch (e) { status.textContent = 'No template yet: make a page first'; return; } }
+      box.classList.toggle('tplon', on); tb.className = on ? 'gold' : '';
+    };
+    tb.onclick = () => showTpl(!box.classList.contains('tplon'));
+    if (template) { showTpl(true); box.classList.add('hide'); }
     box.querySelector('[data-a=apply]').onclick = async () => {
       status.textContent = 'Saving…';
       try { await save(v); status.textContent = 'Saved: the Mac is making the page'; setTimeout(close, 900); } catch (e) { status.textContent = 'Not saved: ' + e.message; }
     };
     const cv = box.querySelector('canvas');
-    cv.onclick = e => {         // (tap: zoom in on that spot, tap again to see the whole page)
+    box.querySelector('.pg').onclick = e => {         // (tap: zoom in on that spot, tap again to see the whole page)
       const r = cv.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height;
       box.classList.toggle('zoom');
       const view = box.querySelector('.view');
@@ -145,7 +156,7 @@ window.NPPreview = (() => {
           {pp: v.photo_print / 100, bl: v.blur / 100, wear: v.wear / 100, folds: v.folds / 100, grain: v.grain / 100,
            black: v.black, paper: v.paper, warmth: v.warmth});
       };
-      draw(); status.textContent = 'Live preview: tap the page to zoom';
+      draw(); status.textContent = 'Live preview · tap the page to zoom · Template shows what goes where';
     } catch (e) { status.textContent = 'No preview: ' + e.message; }
     let queued = false;
     box.querySelectorAll('input[type=range]').forEach(i => i.oninput = () => {
