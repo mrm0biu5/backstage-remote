@@ -103,7 +103,7 @@ input:focus,textarea:focus{border-color:var(--gold)}
 
 <script>
 // (bump on every change, so the owner can tell which version the phone is showing)
-const VERSION = "1.11";
+const VERSION = "1.12";
 document.getElementById("ver").textContent = "v" + VERSION;
 const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
 const $ = s => document.querySelector(s);
@@ -205,6 +205,7 @@ function build() {
   document.querySelectorAll('.action').forEach(box => {
     const btn = box.querySelector('button'), msg = box.querySelector('.msg');
     if (box.dataset.client === 'np-preview' || box.dataset.client === 'np-template') { btn.onclick = () => openPreview(box.dataset.act, box.dataset.client === 'np-template'); return; }
+    if (box.dataset.client === 'np-export') { btn.onclick = () => exportPage(box, () => fetch(API + box.dataset.act + '/page.jpg?t=' + Date.now(), {cache: 'no-store', headers: {Authorization: 'Bearer ' + token, Accept: 'application/vnd.github.raw'}}).then(r => { if (!r.ok) throw new Error('no page yet (GitHub ' + r.status + ')'); return r.blob(); })); return; }
     btn.onclick = async () => {
       const args = {}; box.querySelectorAll('[data-arg]').forEach(i => args[i.dataset.arg] = i.value);
       const cid = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -253,6 +254,24 @@ function fill() {
     c.querySelectorAll('.action[data-cid]').forEach(box => {
       if ((status.done || []).includes(box.dataset.cid)) { const m = box.querySelector('.msg'); m.className = 'msg ok'; m.textContent = 'Done on the Mac ✓'; delete box.dataset.cid; }
     });
+  }
+}
+// Export front page: the latest page.jpg to the share sheet (Save Image puts it in Photos). Safari wants the share
+// straight from a tap, so if fetching took too long the button asks for a second tap.
+async function exportPage(box, load) {
+  const btn = box.querySelector('button'), msg = box.querySelector('.msg');
+  try {
+    if (!box._file) { btn.disabled = true; msg.className = 'msg'; msg.textContent = 'Getting the page…';
+      box._file = new File([await load()], 'front-page-' + new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '') + '.jpg', {type: 'image/jpeg'}); }
+    btn.disabled = false;
+    if (navigator.canShare?.({files: [box._file]})) { await navigator.share({files: [box._file]}); msg.className = 'msg ok'; msg.textContent = 'Done ✓'; }
+    else { const a = document.createElement('a'); a.href = URL.createObjectURL(box._file); a.download = box._file.name; a.click(); msg.className = 'msg ok'; msg.textContent = 'Saved ✓'; }
+    box._file = null; btn.textContent = box.querySelector('.name').textContent;
+  } catch (e) {
+    btn.disabled = false;
+    if (e.name === 'NotAllowedError' && box._file) { msg.className = 'msg'; msg.textContent = 'Ready: tap Save to Photos'; btn.textContent = 'Save to Photos'; }
+    else if (e.name === 'AbortError') { msg.textContent = ''; }
+    else { box._file = null; msg.className = 'msg bad'; msg.textContent = e.message; }
   }
 }
 // (the Newspaper's live Look preview: np-preview.js, next to this page; its files from the sync repo)
