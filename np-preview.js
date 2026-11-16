@@ -63,7 +63,10 @@ window.NPPreview = (() => {
   #npp canvas,#npp .tpl{width:100%;height:auto;display:block}
   #npp .tpl{position:absolute;inset:0;display:none}#npp.tplon .tpl{display:block}
   #npp.zoom .pg{width:250%;max-width:none}
-  #npp .sheet{background:rgba(20,20,26,.94);border-top:1px solid #333;padding:8px 14px calc(env(safe-area-inset-bottom) + 10px);max-height:44vh;overflow:auto}
+  #npp .sheet{background:rgba(20,20,26,.94);border-top:1px solid #333;padding:0 14px calc(env(safe-area-inset-bottom) + 10px);max-height:44vh;display:flex;flex-direction:column;min-height:0}
+  #npp .grab{touch-action:none;padding:7px 0 6px;margin:0 -14px;cursor:grab}#npp .grab:before{content:'';display:block;width:40px;height:5px;border-radius:3px;background:#555;margin:0 auto}
+  #npp .sl{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;min-height:0}
+  #npp.drag .sheet{max-height:none}
   #npp.hide .sheet .sl{display:none}
   #npp .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:4px}
   #npp .bar b{flex-basis:100%;font-size:13px;color:#aaa;font-weight:500}
@@ -96,7 +99,7 @@ window.NPPreview = (() => {
   async function open({fields, values, load, save, template}) {
     if (!document.getElementById('npp-css')) { const st = document.createElement('style'); st.id = 'npp-css'; st.textContent = css; document.head.appendChild(st); }
     const box = document.createElement('div'); box.id = 'npp';
-    box.innerHTML = `<div class="view"><div class="pg"><canvas></canvas><img class="tpl" alt=""></div></div><div class="sheet"><div class="bar"><b>Loading the page…</b>
+    box.innerHTML = `<div class="view"><div class="pg"><canvas></canvas><img class="tpl" alt=""></div></div><div class="sheet"><div class="grab"></div><div class="bar"><b>Loading the page…</b>
       <button data-a="tpl">Template</button><button data-a="hide">Sliders</button><button data-a="close">Cancel</button><button class="gold" data-a="apply">Apply</button></div>
       <div class="sl">${fields.map(f => `<label>${f.label}<i id="npv-${f.key}"></i></label>
       <input type="range" data-k="${f.key}" min="${f.min}" max="${f.max}" step="${f.step || 1}" value="${values[f.key]}">`).join('')}</div></div>`;
@@ -106,7 +109,24 @@ window.NPPreview = (() => {
     label();
     const status = box.querySelector('.bar b'), close = () => box.remove();
     box.querySelector('[data-a=close]').onclick = close;
-    box.querySelector('[data-a=hide]').onclick = () => box.classList.toggle('hide');
+    box.querySelector('[data-a=hide]').onclick = () => { box.classList.toggle('hide'); sheet.style.height = ''; box.classList.remove('drag'); };
+    // (swipe the handle or the bar up/down to make the sliders panel taller or shorter and see more of the page)
+    const sheet = box.querySelector('.sheet');
+    let drag = null;
+    const grabbed = e => e.target.closest('.grab') || (e.target.closest('.bar') && !e.target.closest('button'));
+    sheet.addEventListener('pointerdown', e => {
+      if (!grabbed(e)) return;
+      box.classList.remove('hide'); drag = {y: e.clientY, h: sheet.getBoundingClientRect().height};
+      sheet.setPointerCapture(e.pointerId);
+    });
+    sheet.addEventListener('pointermove', e => {
+      if (!drag) return;
+      const min = box.querySelector('.grab').offsetHeight + box.querySelector('.bar').offsetHeight + 12;
+      box.classList.add('drag');
+      sheet.style.height = Math.max(min, Math.min(innerHeight * .85, drag.h + drag.y - e.clientY)) + 'px';
+    });
+    sheet.addEventListener('pointerup', () => drag = null); sheet.addEventListener('pointercancel', () => drag = null);
+    box.querySelector('.bar').style.touchAction = 'none';
     // (the template: which trick value goes where, over the page; loaded the first time it's shown)
     const tpl = box.querySelector('.tpl'), tb = box.querySelector('[data-a=tpl]');
     const showTpl = async on => {
