@@ -26,7 +26,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;ma
 .hdr{display:flex;align-items:center;gap:8px}
 .cog{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--dim);font-size:18px;line-height:1;cursor:pointer;display:grid;place-items:center;padding:0}
 .cog.sel{background:var(--card2);color:var(--text);border-color:var(--gold)}
-.ver{font-size:11px;font-weight:500;color:var(--faint);margin-left:6px;align-self:flex-end;margin-bottom:3px}
+.ver{font-size:12px;font-weight:600;color:#fff;margin-left:6px;align-self:flex-end;margin-bottom:3px}
 .pill{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);background:var(--card);border:1px solid var(--line);padding:5px 10px;border-radius:99px;white-space:nowrap}
 .led{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:none}
 .led.ok{background:var(--green);box-shadow:0 0 8px var(--green)}.led.bad{background:var(--red);box-shadow:0 0 8px var(--red)}.led.wait{background:var(--amber)}
@@ -103,7 +103,7 @@ input:focus,textarea:focus{border-color:var(--gold)}
 
 <script>
 // (bump on every change, so the owner can tell which version the phone is showing)
-const VERSION = "1.13";
+const VERSION = "1.14";
 document.getElementById("ver").textContent = "v" + VERSION;
 const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
 const $ = s => document.querySelector(s);
