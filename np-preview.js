@@ -58,7 +58,7 @@ window.NPPreview = (() => {
 
   const css = `
   #npp{position:fixed;inset:0;z-index:9999;background:#000;display:flex;flex-direction:column;font:14px -apple-system,sans-serif;color:#eee}
-  #npp .view{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;display:flex;justify-content:center}
+  #npp .view{flex:1;overflow:auto;padding-top:calc(env(safe-area-inset-top) + 8px);-webkit-overflow-scrolling:touch;display:flex;justify-content:center}
   #npp .pg{position:relative;width:100%;max-width:600px;align-self:flex-start}
   #npp canvas,#npp .tpl{width:100%;height:auto;display:block}
   #npp .tpl{position:absolute;inset:0;display:none}#npp.tplon .tpl{display:block}
