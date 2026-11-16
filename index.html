@@ -18,7 +18,7 @@
 :root{--bg:#0b0b0e;--card:#16161b;--card2:#1e1e25;--line:#2a2a33;--text:#ececf1;--dim:#9a9aa6;--faint:#6b6b76;--gold:#d8b25a;--green:#35c26b;--red:#ef5350;--amber:#f0a83a}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;-webkit-font-smoothing:antialiased}
-body{padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 24px)}
+body{padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 84px)}
 .wrap{max-width:720px;margin:0 auto}
 header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px}
@@ -103,7 +103,7 @@ input:focus,textarea:focus{border-color:var(--gold)}
 
 <script>
 // (bump on every change, so the owner can tell which version the phone is showing)
-const VERSION = "1.14";
+const VERSION = "1.15";
 document.getElementById("ver").textContent = "v" + VERSION;
 const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
 const $ = s => document.querySelector(s);
@@ -331,5 +331,8 @@ if (token) refresh(); else showConnect();
 setInterval(() => { if (token && !document.hidden) refresh(); }, 6000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && token) refresh(); });
 </script>
+<button id="hardRefresh" aria-label="Refresh" title="Refresh"
+  onclick="this.style.opacity=.5;const u=new URL(location.href);u.searchParams.set('r',Date.now());location.replace(u)"
+  style="position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:9999;width:52px;height:52px;border-radius:50%;border:1px solid var(--line);background:var(--card2);color:#fff;font-size:26px;line-height:1;box-shadow:0 4px 14px rgba(0,0,0,.5);cursor:pointer">&#x21bb;</button>
 </body>
 </html>
