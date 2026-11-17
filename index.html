@@ -123,7 +123,9 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
       <button class="btn sm" id="siCheck">Check now</button></div>
     <div class="silist" id="siList"><div class="help">Not checked yet.</div></div><div class="msg" id="siMsg"></div></div>
   <div class="card"><div class="row" style="justify-content:space-between"><div><div class="title">Pair AIcons</div>
-      <div class="about">Opens AIcons on this phone and connects it to Backstage.</div></div><button class="btn gold" id="pairAIcons">Pair</button></div></div>
+      <div class="about">Opens AIcons on this phone and connects it to Backstage.</div></div><button class="btn gold pairApp" data-app="aicons">Pair</button></div></div>
+  <div class="card"><div class="row" style="justify-content:space-between"><div><div class="title">Pair PixelsGhost</div>
+      <div class="about">Opens PixelsGhost on this phone and connects it to Backstage.</div></div><button class="btn gold pairApp" data-app="pixelsghost">Pair</button></div></div>
   <div class="card"><div class="title">The Mac</div><div class="about" id="macInfo"></div></div>
   <div class="card"><div class="row" style="justify-content:space-between"><div><div class="title">Playwright browser</div>
       <div class="about">The hidden browser that works on Instagram for the acts. Show it on the Mac to sign in to a site.</div></div>
@@ -139,7 +141,7 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
 
 <script>
 // (bump on every change, so the owner can tell which version the phone is showing)
-const VERSION = "1.18";
+const VERSION = "1.19";
 document.getElementById("ver").textContent = "v" + VERSION;
 const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
 const $ = s => document.querySelector(s);
@@ -397,7 +399,7 @@ $('#siCheck').onclick = async () => {
 };
 // pairing: opens AIcons with the sync repo and this phone's token (it reaches Backstage from anywhere), plus the hub's
 // Wi-Fi address (used once a key is added from the Backstage page on the same Wi-Fi)
-$('#pairAIcons').onclick = () => { location.href = 'aicons://pair?repo=' + encodeURIComponent(REPO) + '&token=' + encodeURIComponent(token) + (status?.hub ? '&hub=' + encodeURIComponent(status.hub) : ''); };
+document.querySelectorAll('.pairApp').forEach(b => b.onclick = () => { location.href = b.dataset.app + '://pair?repo=' + encodeURIComponent(REPO) + '&token=' + encodeURIComponent(token) + (status?.hub ? '&hub=' + encodeURIComponent(status.hub) : ''); });
 $('#forget').onclick = () => { if (!confirm('Disconnect this phone? You\'ll need the token again.')) return;
   try { localStorage.removeItem('bsToken'); } catch (e) {} token = ''; showConnect(); };
 if (token) refresh(); else showConnect();
