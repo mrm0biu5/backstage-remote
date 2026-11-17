@@ -26,6 +26,8 @@
 .shot .t{font-weight:600}.shot .t span{color:var(--faint);font-weight:400;font-size:13px}
 .shot .how{font-size:13px;color:var(--dim);margin-top:2px}.shot .for{font-size:12px;color:var(--faint);margin-top:3px}
 .shot .grid{margin-top:10px;grid-template-columns:repeat(auto-fill,minmax(72px,1fr))}
+.st-lib.res{grid-template-columns:repeat(3,1fr);gap:8px}.st-lib .t{font-size:12px}.st-lib .c{font-size:11px}
+.st-lib .st-del{width:24px!important;height:24px!important;font-size:13px!important;top:4px!important;right:4px!important}
 .rules{margin:8px 0 4px;padding-left:18px;font-size:13px;color:var(--dim)}.rules li{margin:3px 0}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
@@ -99,6 +101,32 @@
       }
       const go = root.querySelector('.st-go');
       if (c.busy) { go.disabled = true; go.textContent = c.busy; } else if (go.textContent !== 'Make it') { go.disabled = false; go.textContent = 'Make it'; }
+    },
+
+    // every picture made, filterable by look (Wi-Fi page): tap one to open it full size
+    libraryHTML(a) {
+      return `<details class="fold"><summary>Library <span id="stln-${a.name}"></span></summary><div class="body">
+        <div class="st-chips st-lf" style="margin-top:10px"></div><div class="res st-lib" style="margin-top:10px"></div></div></details>`;
+    },
+    libraryUpdate(a, remove) {
+      const root = document.getElementById('act-' + a.name); if (!root || !a.gallery) return;
+      const s = state[a.name], g = a.gallery, looks = Object.fromEntries(a.catalogue.styles.map(x => [x.id, x]));
+      s.lib = s.lib || '';
+      document.getElementById('stln-' + a.name).textContent = g.length ? `(${g.length})` : '';
+      const have = [...new Set(g.map(x => x.style))];
+      const lf = root.querySelector('.st-lf');
+      lf.style.display = have.length < 2 ? 'none' : '';
+      lf.innerHTML = [['', 'All']].concat(have.map(k => [k, (looks[k]?.emoji || '') + ' ' + (looks[k]?.name || k)]))
+        .map(([k, n]) => `<button class="st-chip${s.lib === k ? ' sel' : ''}" data-lf="${k}">${esc(n)}</button>`).join('');
+      lf.querySelectorAll('[data-lf]').forEach(b => b.onclick = () => { s.lib = b.dataset.lf; Studio.libraryUpdate(a, remove); });
+      const shown = g.filter(x => !s.lib || x.style === s.lib);
+      const lib = root.querySelector('.st-lib');
+      lib.innerHTML = shown.length ? shown.map(x => `<div style="position:relative"><a href="${esc(x.url)}" target="_blank">
+          <img loading="lazy" src="${esc(x.url)}"><div class="t">${esc(x.title)}</div>
+          <div class="c">${esc((looks[x.style]?.name || '') + (x.when ? ' · ' + x.when : ''))}</div></a>
+          <button class="st-del" data-file="${esc(x.file)}" title="Delete" style="position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:15px;cursor:pointer">×</button></div>`).join('')
+        : '<div class="help">Nothing made yet: make one above.</div>';
+      lib.querySelectorAll('.st-del').forEach(b => b.onclick = () => { if (confirm('Delete this picture?')) remove(b.dataset.file); });
     },
 
     // your photos, by kind, with how to take each (Wi-Fi page only): folded, under the studio
