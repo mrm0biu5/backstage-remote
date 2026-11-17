@@ -153,7 +153,7 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
 <script src="studio.js"></script>
 <script>
 // (bump on every change, so the owner can tell which version the phone is showing)
-const VERSION = "1.28";
+const VERSION = "1.29";
 document.getElementById("ver").textContent = "v" + VERSION;
 const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
 const $ = s => document.querySelector(s);
@@ -197,7 +197,7 @@ function fieldHTML(a, f) {
       <label class="switch"><input type="checkbox" id="${id}" ${data} ${v ? 'checked' : ''}><span></span></label></div>`;
   if (f.type === 'choice') return `<div class="${cls}"><label>${lab}</label><div class="seg">${(f.options || []).map(o =>
       `<label><input type="radio" name="${id}" value="${esc(o)}" ${data} ${String(v) === o ? 'checked' : ''}><span>${esc(o)}</span></label>`).join('')}</div>${help}</div>`;
-  return `<div class="${cls}"><label for="${id}">${lab}</label>${f.type === 'textarea'
+  return `<div class="${cls}">${f.label ? `<label for="${id}">${lab}</label>` : ''}${f.type === 'textarea'
       ? `<textarea id="${id}" ${data} spellcheck="false" rows="10">${esc(v)}</textarea>`
       : `<input type="text" id="${id}" ${data} value="${esc(v)}" placeholder="${esc(f.placeholder || '')}" autocapitalize="none" autocorrect="off">`}${help}</div>`;
 }
