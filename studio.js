@@ -59,7 +59,6 @@
         <div class="st-chips"></div>
         <input type="text" class="st-extra" placeholder="Your own idea (optional)" style="margin-top:8px">
         ${opts.photos ? '<div class="lab">Photo of you</div><div class="st-row st-photos"></div>' : ''}
-        <label class="st-sw"><span>Post it to Instagram</span><span class="switch"><input type="checkbox" class="st-post"><span></span></span></label>
         <button class="btn gold st-go">Make it</button><div class="msg"></div></div>`;
     },
     // wires it up; send(args) → Promise of a message (the page's own route: hub or commands.json)
@@ -72,7 +71,7 @@
         if (!name) { msg.className = 'msg bad'; msg.textContent = 'Type a name first.'; return; }
         const extra = [...s.ideas, root.querySelector('.st-extra').value.trim()].filter(Boolean).join(', ');
         btn.disabled = true; msg.className = 'msg'; msg.textContent = 'Sending…';
-        try { const r = await send({value: name, style: s.style, extra, photo: s.photo, post: root.querySelector('.st-post').checked ? 'yes' : 'no'});
+        try { const r = await send({value: name, style: s.style, extra, photo: s.photo});
           msg.className = 'msg ok'; msg.textContent = r || 'Making it…';
         } catch (e) { msg.className = 'msg bad'; msg.textContent = e.message; }
         btn.disabled = false;
