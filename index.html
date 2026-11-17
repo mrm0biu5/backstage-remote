@@ -123,6 +123,7 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
 
 <div id="pages"></div>
 <section id="sys" hidden>
+  <div id="setupTiles"></div>
   <div class="card"><div class="row" style="justify-content:space-between"><div class="title">Sign-ins</div>
       <button class="btn sm" id="siCheck">Check now</button></div>
     <div class="silist" id="siList"><div class="help">Not checked yet.</div></div><div class="msg" id="siMsg"></div></div>
@@ -148,7 +149,7 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
 <script src="studio.js"></script>
 <script>
 // (bump on every change, so the owner can tell which version the phone is showing)
-const VERSION = "1.23";
+const VERSION = "1.24";
 document.getElementById("ver").textContent = "v" + VERSION;
 const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
 const $ = s => document.querySelector(s);
@@ -227,10 +228,10 @@ function actCard(a) {
 }
 // tricks that are web apps of their own (phone home-screen apps), listed with the acts on the home page
 const LINKS = [{title: 'AIcons', about: 'Spell a card with app icons on a fake home screen', url: 'aicons://'}];
-function tilesHTML(acts) {
+function tilesHTML(acts, links = true) {
   return acts.map(a => `<button class="tile" data-go="${a.name}"><span class="led" id="tl-${a.name}"></span><div class="txt"><div class="title">${esc(a.tab || a.title)}</div>
       <div class="line" id="tt-${a.name}">${esc(a.about || '')}</div></div><span class="go">›</span></button>`).join('')
-    + LINKS.map(l => `<a class="tile" href="${l.url}"${l.url.startsWith('http') ? ' target="_blank" rel="noopener"' : ''}><span class="led ok"></span><div class="txt"><div class="title">${esc(l.title)}</div>
+    + (links ? LINKS : []).map(l => `<a class="tile" href="${l.url}"${l.url.startsWith('http') ? ' target="_blank" rel="noopener"' : ''}><span class="led ok"></span><div class="txt"><div class="title">${esc(l.title)}</div>
       <div class="line">${esc(l.about)}</div></div><span class="go">↗</span></a>`).join('');
 }
 let lastTab = 'p-home';
@@ -242,7 +243,8 @@ function tab(t) {
 }
 function build() {
   // (home: one big button per trick, top to bottom; each act on a page of its own)
-  $('#pages').innerHTML = `<section id="p-home">${tilesHTML(status.acts)}</section>`
+  $('#pages').innerHTML = `<section id="p-home">${tilesHTML(status.acts.filter(a => !a.setup))}</section>`
+  $('#setupTiles').innerHTML = tilesHTML(status.acts.filter(a => a.setup), false);
     + status.acts.map(a => `<section id="p-${a.name}" hidden><button class="back">‹ Tricks</button>${actCard(a)}</section>`).join('');
   $('#cog').hidden = false;
   document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => tab('p-' + b.dataset.go));
