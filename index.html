@@ -100,6 +100,9 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
 .sum .k{color:var(--faint);width:72px;flex:0 0 auto;font-size:13px}.sum .v{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sum .f{font-size:12px;color:var(--faint);white-space:nowrap}.sum .f.push{color:#1a1405;background:var(--gold);border-radius:99px;padding:2px 8px;font-weight:600}
 .card.plain .head .led,.card.plain .head .switch,.card.plain .state{display:none}
+.seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px;margin-top:6px}
+.seg label{flex:1;text-align:center;font-size:14px;padding:7px 4px;border-radius:8px;color:var(--dim);cursor:pointer}
+.seg input{display:none}.seg input:checked+span{color:#1a1405}.seg label:has(input:checked){background:var(--gold);color:#1a1405;font-weight:600}
 </style>
 </head>
 <body><div class="wrap">
@@ -150,7 +153,7 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
 <script src="studio.js"></script>
 <script>
 // (bump on every change, so the owner can tell which version the phone is showing)
-const VERSION = "1.27";
+const VERSION = "1.28";
 document.getElementById("ver").textContent = "v" + VERSION;
 const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
 const $ = s => document.querySelector(s);
@@ -192,6 +195,8 @@ function fieldHTML(a, f) {
       <input type="range" id="${id}" ${data} data-unit="${esc(f.unit || '')}" min="${f.min}" max="${f.max}" step="${f.step || 1}" value="${esc(v)}" style="width:100%;accent-color:var(--gold)">${help}</div>`;
   if (f.type === 'bool') return `<div class="${cls} chk"><div class="txt">${lab}${help}</div>
       <label class="switch"><input type="checkbox" id="${id}" ${data} ${v ? 'checked' : ''}><span></span></label></div>`;
+  if (f.type === 'choice') return `<div class="${cls}"><label>${lab}</label><div class="seg">${(f.options || []).map(o =>
+      `<label><input type="radio" name="${id}" value="${esc(o)}" ${data} ${String(v) === o ? 'checked' : ''}><span>${esc(o)}</span></label>`).join('')}</div>${help}</div>`;
   return `<div class="${cls}"><label for="${id}">${lab}</label>${f.type === 'textarea'
       ? `<textarea id="${id}" ${data} spellcheck="false" rows="10">${esc(v)}</textarea>`
       : `<input type="text" id="${id}" ${data} value="${esc(v)}" placeholder="${esc(f.placeholder || '')}" autocapitalize="none" autocorrect="off">`}${help}</div>`;
@@ -301,6 +306,7 @@ function fill() {
     if (tl) tl.className = 'led ' + (!on ? '' : a.ok ? 'ok' : 'bad'); if (tt) tt.textContent = on ? a.line : 'Off';
     c.querySelectorAll('[data-key]').forEach(i => {
       const k = i.dataset.key; if (document.activeElement === i || (a.name + '.' + k) in pending || !(k in st)) return;
+      if (i.type === 'radio') { i.checked = i.value === String(st[k]); return; }
       if (i.type === 'checkbox') i.checked = !!st[k]; else if (i.value !== String(st[k])) i.value = st[k];
       if (i.type === 'range') $('#rv-' + i.id).textContent = i.value + i.dataset.unit;
     });
