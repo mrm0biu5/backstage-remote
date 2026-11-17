@@ -93,6 +93,8 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
 .fld input[type=range]{margin:4px 0 0}
 .fld.chk{display:flex;align-items:center;gap:12px;margin:0;font-size:14.5px;font-weight:500}.fld.chk .txt{flex:1}
 .rv{color:var(--gold);font-weight:650;font-size:13px}
+.si{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}.si:first-child{border-top:0}
+.si .txt{flex:1;min-width:0}.si .name{font-weight:600;font-size:15px}.si .help{margin-top:1px}
 </style>
 </head>
 <body><div class="wrap">
@@ -117,6 +119,9 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
 
 <div id="pages"></div>
 <section id="sys" hidden>
+  <div class="card"><div class="row" style="justify-content:space-between"><div class="title">Sign-ins</div>
+      <button class="btn sm" id="siCheck">Check now</button></div>
+    <div class="silist" id="siList"><div class="help">Not checked yet.</div></div><div class="msg" id="siMsg"></div></div>
   <div class="card"><div class="title">The Mac</div><div class="about" id="macInfo"></div></div>
   <div class="card"><div class="row" style="justify-content:space-between"><div><div class="title">Playwright browser</div>
       <div class="about">The hidden browser that works on Instagram for the acts. Show it on the Mac to sign in to a site.</div></div>
@@ -132,7 +137,7 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
 
 <script>
 // (bump on every change, so the owner can tell which version the phone is showing)
-const VERSION = "1.16";
+const VERSION = "1.17";
 document.getElementById("ver").textContent = "v" + VERSION;
 const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
 const $ = s => document.querySelector(s);
@@ -339,6 +344,7 @@ async function refresh() {
     if (shape !== built) { build(); built = shape; }
     fill();
     $('#browserBtn').textContent = st.browserShown ? 'Hide' : 'Show';
+    showSignins(st.signins);
     $('#macInfo').textContent = `Last heard from ${new Date(st.updated_ts * 1000).toLocaleString([], {weekday: 'short', hour: '2-digit', minute: '2-digit'})}` +
       ` · ${st.acts.length} effects · ${st.acts.filter(a => a.enabled).length} on`;
   } catch (e) {
@@ -364,6 +370,28 @@ $('#browserBtn').onclick = async () => {
       'Playwright from the phone');
     m.className = 'msg ok'; m.textContent = (show ? 'Showing' : 'Hiding') + ' it on the Mac within about 10 s';
   } catch (e) { m.className = 'msg bad'; m.textContent = e.message; }
+};
+// sign-ins: each site the Mac's acts need, green when it works (checked on the Mac when asked)
+const backstageCmd = (action, args, why) => update('commands.json', d => { d = d || {commands: []}; d.commands = d.commands.filter(c => Date.now() / 1000 - c.at < 900).slice(-19);
+  d.commands.push({cid: Date.now().toString(36), act: '_backstage', action, args, at: Date.now() / 1000}); return d; }, why);
+let siKey = '';
+function showSignins(si) {
+  if (!si) return;
+  const key = JSON.stringify(si); if (key === siKey) return; siKey = key;
+  if (si.checked) { $('#siMsg').className = 'msg'; $('#siMsg').textContent = 'Checked ' + new Date(si.checked * 1000).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}); }
+  $('#siList').innerHTML = si.sites.length ? si.sites.map(x => `<div class="si"><span class="led ${x.ok ? 'ok' : 'bad'}"></span>
+      <div class="txt"><div class="name">${esc(x.name)}</div><div class="help">${esc(x.note)} · ${esc(x.used_by.join(', '))}</div></div>
+      ${x.can_sign_in && !x.ok ? `<button class="btn sm" data-signin="${esc(x.key)}">Sign in</button>` : ''}</div>`).join('')
+    : (si.needed || []).map(n => `<div class="si"><span class="led"></span><div class="txt"><div class="name">${esc(n)}</div><div class="help">not checked yet</div></div></div>`).join('');
+  $('#siList').querySelectorAll('[data-signin]').forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    try { await backstageCmd('signin', {site: b.dataset.signin}, 'sign in from the phone'); $('#siMsg').textContent = 'Opening it in the Backstage browser on the Mac: sign in there, then Check now.'; }
+    catch (e) { b.disabled = false; alert(e.message); }
+  });
+}
+$('#siCheck').onclick = async () => {
+  const m = $('#siMsg'); m.className = 'msg'; m.textContent = 'Asking the Mac to check (about 30 s)…';
+  try { await backstageCmd('signins', {}, 'sign-ins check from the phone'); } catch (e) { m.className = 'msg bad'; m.textContent = e.message; }
 };
 $('#forget').onclick = () => { if (!confirm('Disconnect this phone? You\'ll need the token again.')) return;
   try { localStorage.removeItem('bsToken'); } catch (e) {} token = ''; showConnect(); };
