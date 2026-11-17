@@ -99,6 +99,7 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
 .sum .r{display:flex;align-items:baseline;gap:10px;padding:6px 0;border-top:1px solid var(--line);font-size:14px}.sum .r:first-child{border-top:0}
 .sum .k{color:var(--faint);width:72px;flex:0 0 auto;font-size:13px}.sum .v{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sum .f{font-size:12px;color:var(--faint);white-space:nowrap}.sum .f.push{color:#1a1405;background:var(--gold);border-radius:99px;padding:2px 8px;font-weight:600}
+.card.plain .head .led,.card.plain .head .switch,.card.plain .state{display:none}
 </style>
 </head>
 <body><div class="wrap">
@@ -149,7 +150,7 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
 <script src="studio.js"></script>
 <script>
 // (bump on every change, so the owner can tell which version the phone is showing)
-const VERSION = "1.25";
+const VERSION = "1.26";
 document.getElementById("ver").textContent = "v" + VERSION;
 const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
 const $ = s => document.querySelector(s);
@@ -219,7 +220,7 @@ function actCard(a) {
   const res = status.results?.[a.name] ? `<details class="fold"><summary>Latest results</summary><div class="body"><div class="res" id="res-${a.name}"></div></div></details>` : '';
   const lib = status.library?.[a.name] ? `<details class="fold"><summary>Library <span id="libn-${a.name}"></span></summary>
       <div class="body"><div class="help" style="margin-top:10px">Reused instantly when the name comes up again. Photos are on the Mac.</div><div class="res" id="lib-${a.name}"></div></div></details>` : '';
-  return `<div class="card" id="act-${a.name}">
+  return `<div class="card${a.plain ? ' plain' : ''}" id="act-${a.name}">
     <div class="head"><span class="led"></span><div class="txt"><div class="title">${esc(a.title)}</div>${a.about ? `<div class="about">${esc(a.about)}</div>` : ''}</div>
       <label class="switch"><input type="checkbox" data-act="${a.name}" data-key="enabled"><span></span></label></div>
     <div class="state"></div>${a.summary ? `<div class="sum" id="sum-${a.name}"></div>` : ''}
