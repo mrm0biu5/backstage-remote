@@ -64,6 +64,35 @@ input:focus,textarea:focus{border-color:var(--gold)}
 .tile .go{color:var(--faint);font-size:20px}.tile .led{flex:none}
 .back{background:none;border:0;color:var(--gold);font:inherit;font-weight:600;padding:4px 0 12px;cursor:pointer}
 .brand{cursor:pointer}
+
+/* act pages: main buttons up top; settings and the other actions in folded groups */
+.mains{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.mains .action:first-child{grid-column:1/-1}
+.mains .action{background:none;padding:0;margin:0}
+.mains .btn{width:100%;padding:13px 8px;font-size:15px}
+.mains .action+.action .btn{background:var(--card2);color:var(--text);border:1px solid var(--line)}
+.mains .msg{text-align:center}.mains .msg:empty,.list .msg:empty{display:none}
+details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px;padding:0}
+.fold>summary{display:flex;align-items:center;justify-content:space-between;padding:13px 14px;color:var(--text);font-size:15px;font-weight:600}
+.fold>summary:before,.fold[open]>summary:before{content:none}
+.fold>summary>span{margin:0 auto 0 6px;color:var(--faint);font-weight:500}
+.fold>summary:after{content:"›";color:var(--faint);font-size:22px;line-height:.8;transition:transform .2s}
+.fold[open]>summary:after{transform:rotate(90deg)}
+.folds{margin-top:12px;background:var(--card2);border-radius:12px;overflow:hidden}
+.folds>details.fold{margin:0;border-radius:0;background:none;border-top:1px solid var(--line)}.folds>details.fold:first-child{border-top:0}
+.fold>.body{padding:2px 14px 14px;border-top:1px solid var(--line)}
+.list .action{background:none;border-radius:0;margin:0;padding:11px 0;border-top:1px solid var(--line)}
+.list .action:first-child{border-top:0}
+.arow{display:flex;align-items:center;gap:12px}.arow .txt{flex:1;min-width:0}
+.arow .name{font-weight:600;font-size:14.5px}.arow .help{margin-top:1px}
+.list input[data-arg]{margin-top:8px}
+.btn.sm{padding:7px 14px;font-size:14px;background:#2e2e38;flex:none}.btn.danger{background:#4a1d1d;color:#ffc9c7}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.fld{grid-column:1/-1;padding-top:12px;min-width:0}.fld.half{grid-column:auto}
+.fld label{margin:0 0 6px}
+.fld .lrow{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.fld .lrow label{margin:0}
+.fld input[type=range]{margin:4px 0 0}
+.fld.chk{display:flex;align-items:center;gap:12px;margin:0;font-size:14.5px;font-weight:500}.fld.chk .txt{flex:1}
+.rv{color:var(--gold);font-weight:650;font-size:13px}
 </style>
 </head>
 <body><div class="wrap">
@@ -103,7 +132,7 @@ input:focus,textarea:focus{border-color:var(--gold)}
 
 <script>
 // (bump on every change, so the owner can tell which version the phone is showing)
-const VERSION = "1.15";
+const VERSION = "1.16";
 document.getElementById("ver").textContent = "v" + VERSION;
 const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
 const $ = s => document.querySelector(s);
@@ -137,34 +166,45 @@ async function update(name, change, message) {
 // ---- the page, built from the Mac's status (each act's controls), filled from settings.json
 let status = null, settings = null, built = '', tabNow = '', pending = {};
 function fieldHTML(a, f) {
+  // (a "group" starts a folded section, "half" = two to a row, "range" = a slider with its value shown)
   const v = settings?.acts?.[a.name]?.[f.key] ?? '';
-  const id = `f-${a.name}-${f.key}`, data = `data-act="${a.name}" data-key="${f.key}"`;
-  const lab = `${esc(f.label)}<span class="saved" id="s-${id}"></span>`;
-  const head = f.group ? `<div style="font-weight:650;font-size:14.5px;margin:16px 0 4px">${esc(f.group)}</div>` : '';
-  if (f.type === 'range') return head + `<label for="${id}">${esc(f.label)} <b style="color:var(--gold)" id="rv-${id}">${esc(v)}${esc(f.unit || '')}</b><span class="saved" id="s-${id}"></span></label>
-      <input type="range" id="${id}" ${data} data-unit="${esc(f.unit || '')}" min="${f.min}" max="${f.max}" step="${f.step || 1}" value="${esc(v)}" style="width:100%;accent-color:var(--gold)">${f.help ? `<div class="help">${esc(f.help)}</div>` : ''}`;
-  if (f.type === 'bool') return head + `<div class="chk"><span style="flex:1">${lab}</span>
-      <label class="switch"><input type="checkbox" id="${id}" ${data} ${v ? 'checked' : ''}><span></span></label></div>${f.help ? `<div class="help">${esc(f.help)}</div>` : ''}`;
-  return head + `<label for="${id}">${lab}</label>${f.type === 'textarea'
+  const id = `f-${a.name}-${f.key}`, data = `data-act="${a.name}" data-key="${f.key}"`, cls = 'fld' + (f.half ? ' half' : '');
+  const lab = `${esc(f.label)}<span class="saved" id="s-${id}"></span>`, help = f.help ? `<div class="help">${esc(f.help)}</div>` : '';
+  if (f.type === 'range') return `<div class="${cls}"><div class="lrow"><label for="${id}">${lab}</label><b class="rv" id="rv-${id}">${esc(v)}${esc(f.unit || '')}</b></div>
+      <input type="range" id="${id}" ${data} data-unit="${esc(f.unit || '')}" min="${f.min}" max="${f.max}" step="${f.step || 1}" value="${esc(v)}" style="width:100%;accent-color:var(--gold)">${help}</div>`;
+  if (f.type === 'bool') return `<div class="${cls} chk"><div class="txt">${lab}${help}</div>
+      <label class="switch"><input type="checkbox" id="${id}" ${data} ${v ? 'checked' : ''}><span></span></label></div>`;
+  return `<div class="${cls}"><label for="${id}">${lab}</label>${f.type === 'textarea'
       ? `<textarea id="${id}" ${data} spellcheck="false" rows="10">${esc(v)}</textarea>`
-      : `<input type="text" id="${id}" ${data} value="${esc(v)}" autocapitalize="none" autocorrect="off">`}${f.help ? `<div class="help">${esc(f.help)}</div>` : ''}`;
+      : `<input type="text" id="${id}" ${data} value="${esc(v)}" placeholder="${esc(f.placeholder || '')}" autocapitalize="none" autocorrect="off">`}${help}</div>`;
 }
 function actCard(a) {
+  // (fields marked "top" sit above the actions, as main switches; the rest are folded away by group)
   const top = a.fields.filter(f => f.top).map(f => fieldHTML(a, f)).join('');
-  const rest = a.fields.filter(f => !f.top).map(f => fieldHTML(a, f)).join('');
-  const actions = (a.actions || []).map(x => `<div class="action" data-act="${a.name}" data-id="${x.id}" data-client="${esc(x.client || '')}">
-      <div class="name">${esc(x.label)}</div>${x.help ? `<div class="help">${esc(x.help)}</div>` : ''}
-      ${(x.fields || []).map(f => `<label>${esc(f.label)}</label><input type="text" data-arg="${f.key}" autocapitalize="none" autocorrect="off">`).join('')}
-      <div class="row" style="margin-top:10px"><button class="btn gold">${esc(x.label)}</button></div><div class="msg"></div></div>`).join('');
+  const groups = [];
+  for (const f of a.fields.filter(f => !f.top)) { if (f.group || !groups.length) groups.push({name: f.group || 'Settings', fields: []}); groups.at(-1).fields.push(f); }
+  const folds = groups.length ? '<div class="folds">' + groups.map(g => `<details class="fold"><summary>${esc(g.name)}</summary>
+      <div class="body fgrid">${g.fields.map(f => fieldHTML(a, f)).join('')}</div></details>`).join('') + '</div>' : '';
+  // (actions: "main" ones as big buttons up top; the rest as small rows, folded under More when there are main ones)
+  const action = x => x.main ? `<div class="action" data-act="${a.name}" data-id="${x.id}" data-client="${esc(x.client || '')}">
+      <button class="btn gold" data-label="${esc(x.label)}">${esc(x.label)}</button><div class="msg"></div></div>`
+    : `<div class="action" data-act="${a.name}" data-id="${x.id}" data-client="${esc(x.client || '')}">
+      <div class="arow"><div class="txt"><div class="name">${esc(x.label)}</div>${x.help ? `<div class="help">${esc(x.help)}</div>` : ''}</div>
+        <button class="btn sm${x.danger ? ' danger' : ''}" data-label="${esc(x.button || 'Run')}">${esc(x.button || 'Run')}</button></div>
+      ${(x.fields || []).map(f => `<input type="text" data-arg="${f.key}" placeholder="${esc(f.placeholder || f.label)}" autocapitalize="none" autocorrect="off">`).join('')}
+      <div class="msg"></div></div>`;
+  const mains = (a.actions || []).filter(x => x.main), rest = (a.actions || []).filter(x => !x.main);
+  const restHTML = rest.length ? (mains.length ? `<div class="folds"><details class="fold"><summary>More</summary><div class="body list">${rest.map(action).join('')}</div></details></div>`
+    : `<div class="sec list">${rest.map(action).join('')}</div>`) : '';
+  const res = status.results?.[a.name] ? `<details class="fold"><summary>Latest results</summary><div class="body"><div class="res" id="res-${a.name}"></div></div></details>` : '';
+  const lib = status.library?.[a.name] ? `<details class="fold"><summary>Library <span id="libn-${a.name}"></span></summary>
+      <div class="body"><div class="help" style="margin-top:10px">Reused instantly when the name comes up again. Photos are on the Mac.</div><div class="res" id="lib-${a.name}"></div></div></details>` : '';
   return `<div class="card" id="act-${a.name}">
     <div class="head"><span class="led"></span><div class="txt"><div class="title">${esc(a.title)}</div>${a.about ? `<div class="about">${esc(a.about)}</div>` : ''}</div>
       <label class="switch"><input type="checkbox" data-act="${a.name}" data-key="enabled"><span></span></label></div>
     <div class="state"></div>
-    ${top ? `<div class="sec top">${top}</div>` : ''}${actions ? `<div class="sec">${actions}</div>` : ''}
-    ${status.results?.[a.name] ? `<details><summary>Latest results</summary><div class="res" id="res-${a.name}"></div></details>` : ''}
-    ${status.library?.[a.name] ? `<details><summary>Library <span id="libn-${a.name}"></span></summary>
-      <div class="help">Reused instantly when the name comes up again. Photos are on the Mac.</div><div class="res" id="lib-${a.name}"></div></details>` : ''}
-    ${rest ? `<details><summary>Settings</summary>${rest}</details>` : ''}</div>`;
+    ${top ? `<div class="sec top">${top}</div>` : ''}${mains.length ? `<div class="mains">${mains.map(action).join('')}</div>` : ''}
+    ${folds}${restHTML}${res || lib ? `<div class="folds">${res}${lib}</div>` : ''}</div>`;
 }
 // tricks that are web apps of their own (phone home-screen apps), listed with the acts on the home page
 const LINKS = [{title: 'AIcons', about: 'Spell a card with app icons on a fake home screen', url: 'aicons://'}];
@@ -266,7 +306,7 @@ async function exportPage(box, load) {
     btn.disabled = false;
     if (navigator.canShare?.({files: [box._file]})) { await navigator.share({files: [box._file]}); msg.className = 'msg ok'; msg.textContent = 'Done ✓'; }
     else { const a = document.createElement('a'); a.href = URL.createObjectURL(box._file); a.download = box._file.name; a.click(); msg.className = 'msg ok'; msg.textContent = 'Saved ✓'; }
-    box._file = null; btn.textContent = box.querySelector('.name').textContent;
+    box._file = null; btn.textContent = btn.dataset.label;
   } catch (e) {
     btn.disabled = false;
     if (e.name === 'NotAllowedError' && box._file) { msg.className = 'msg'; msg.textContent = 'Ready: tap Save to Photos'; btn.textContent = 'Save to Photos'; }
