@@ -95,6 +95,10 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
 .rv{color:var(--gold);font-weight:650;font-size:13px}
 .si{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}.si:first-child{border-top:0}
 .si .txt{flex:1;min-width:0}.si .name{font-weight:600;font-size:15px}.si .help{margin-top:1px}
+.sum{background:var(--bg);border-radius:12px;padding:6px 12px;margin-top:10px}
+.sum .r{display:flex;align-items:baseline;gap:10px;padding:6px 0;border-top:1px solid var(--line);font-size:14px}.sum .r:first-child{border-top:0}
+.sum .k{color:var(--faint);width:72px;flex:0 0 auto;font-size:13px}.sum .v{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sum .f{font-size:12px;color:var(--faint);white-space:nowrap}.sum .f.push{color:#1a1405;background:var(--gold);border-radius:99px;padding:2px 8px;font-weight:600}
 </style>
 </head>
 <body><div class="wrap">
@@ -144,7 +148,7 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
 <script src="studio.js"></script>
 <script>
 // (bump on every change, so the owner can tell which version the phone is showing)
-const VERSION = "1.22";
+const VERSION = "1.23";
 document.getElementById("ver").textContent = "v" + VERSION;
 const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
 const $ = s => document.querySelector(s);
@@ -190,6 +194,9 @@ function fieldHTML(a, f) {
       ? `<textarea id="${id}" ${data} spellcheck="false" rows="10">${esc(v)}</textarea>`
       : `<input type="text" id="${id}" ${data} value="${esc(v)}" placeholder="${esc(f.placeholder || '')}" autocapitalize="none" autocorrect="off">`}${help}</div>`;
 }
+// (a trick's "summary": what's on it now and where each value came from, e.g. "PixelsGhost · 17:40")
+const sumHTML = rows => rows.filter(r => r.value).map(r => `<div class="r"><span class="k">${esc(r.label)}</span><span class="v">${esc(r.value)}</span>
+  <span class="f${r.pushed ? ' push' : ''}">${esc(r.from)}</span></div>`).join('') || '<div class="r"><span class="k">Empty</span><span class="v" style="font-weight:400;color:var(--faint)">nothing set yet</span></div>';
 function actCard(a) {
   // (fields marked "top" sit above the actions, as main switches; the rest are folded away by group)
   const top = a.fields.filter(f => f.top).map(f => fieldHTML(a, f)).join('');
@@ -214,7 +221,7 @@ function actCard(a) {
   return `<div class="card" id="act-${a.name}">
     <div class="head"><span class="led"></span><div class="txt"><div class="title">${esc(a.title)}</div>${a.about ? `<div class="about">${esc(a.about)}</div>` : ''}</div>
       <label class="switch"><input type="checkbox" data-act="${a.name}" data-key="enabled"><span></span></label></div>
-    <div class="state"></div>
+    <div class="state"></div>${a.summary ? `<div class="sum" id="sum-${a.name}"></div>` : ''}
     ${top ? `<div class="sec top">${top}</div>` : ''}${mains.length ? `<div class="mains">${mains.map(action).join('')}</div>` : ''}${a.catalogue ? Studio.html(a) : ''}
     ${folds}${restHTML}${res || lib ? `<div class="folds">${res}${lib}</div>` : ''}</div>`;
 }
@@ -295,6 +302,7 @@ function fill() {
       if (i.type === 'range') $('#rv-' + i.id).textContent = i.value + i.dataset.unit;
     });
     if (a.catalogue) Studio.update(a);
+    if (a.summary) $('#sum-' + a.name).innerHTML = sumHTML(a.summary);
     const r = $('#res-' + a.name);
     if (r) r.innerHTML = (status.results[a.name] || []).map(g => `<div>${esc(g.title)}<span>${esc(g.caption)}</span></div>`).join('') || '<div class="help">None yet.</div>';
     const lb = $('#lib-' + a.name), names = status.library?.[a.name] || [];
