@@ -122,6 +122,8 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
   <div class="card"><div class="row" style="justify-content:space-between"><div class="title">Sign-ins</div>
       <button class="btn sm" id="siCheck">Check now</button></div>
     <div class="silist" id="siList"><div class="help">Not checked yet.</div></div><div class="msg" id="siMsg"></div></div>
+  <div class="card"><div class="row" style="justify-content:space-between"><div><div class="title">Pair Backstage app</div>
+      <div class="about">Opens the Backstage iPhone app and connects it.</div></div><button class="btn gold pairApp" data-app="backstageapp">Pair</button></div></div>
   <div class="card"><div class="row" style="justify-content:space-between"><div><div class="title">Pair AIcons</div>
       <div class="about">Opens AIcons on this phone and connects it to Backstage.</div></div><button class="btn gold pairApp" data-app="aicons">Pair</button></div></div>
   <div class="card"><div class="row" style="justify-content:space-between"><div><div class="title">Pair PixelsGhost</div>
@@ -142,7 +144,7 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
 <script src="studio.js"></script>
 <script>
 // (bump on every change, so the owner can tell which version the phone is showing)
-const VERSION = "1.21";
+const VERSION = "1.22";
 document.getElementById("ver").textContent = "v" + VERSION;
 const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
 const $ = s => document.querySelector(s);
