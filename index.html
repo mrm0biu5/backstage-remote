@@ -105,6 +105,8 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
 .seg input{display:none}.seg input:checked+span{color:#1a1405}.seg label:has(input:checked){background:var(--gold);color:#1a1405;font-weight:600}
 /* (status: the light says it; words only when something's wrong) */
 .state{display:none}.state.bad{display:block;background:none;padding:0;margin-top:6px;color:#ff8a87;font-size:13px}
+/* (a group of one short line stays open, with nothing to fold) */
+.fold.one>summary{pointer-events:none}.fold.one>summary:after{content:none}
 </style>
 </head>
 <body><div class="wrap">
@@ -155,7 +157,7 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
 <script src="studio.js"></script>
 <script>
 // (bump on every change, so the owner can tell which version the phone is showing)
-const VERSION = "1.30";
+const VERSION = "1.31";
 document.getElementById("ver").textContent = "v" + VERSION;
 const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
 const $ = s => document.querySelector(s);
@@ -211,7 +213,8 @@ function actCard(a) {
   const top = a.fields.filter(f => f.top).map(f => fieldHTML(a, f)).join('');
   const groups = [];
   for (const f of a.fields.filter(f => !f.top)) { if (f.group || !groups.length) groups.push({name: f.group || 'Settings', fields: []}); groups.at(-1).fields.push(f); }
-  const folds = groups.length ? '<div class="folds">' + groups.map(g => `<details class="fold"><summary>${esc(g.name)}</summary>
+  const one = g => g.fields.length === 1 && !['textarea'].includes(g.fields[0].type);
+  const folds = groups.length ? '<div class="folds">' + groups.map(g => `<details class="fold${one(g) ? ' one' : ''}"${one(g) ? ' open' : ''}><summary>${esc(g.name)}</summary>
       <div class="body fgrid">${g.fields.map(f => fieldHTML(a, f)).join('')}</div></details>`).join('') + '</div>' : '';
   // (actions: "main" ones as big buttons up top; the rest as small rows, folded under More when there are main ones)
   const action = x => x.main ? `<div class="action" data-act="${a.name}" data-id="${x.id}" data-client="${esc(x.client || '')}">
