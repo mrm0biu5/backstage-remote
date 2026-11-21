@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Backstage">
+<meta name="apple-mobile-web-app-title" content="StageManager">
 <link rel="apple-touch-icon" href="icon-180.png">
-<title>Backstage</title>
+<title>StageManager</title>
 <!--
   Backstage remote: the phone's control page, from anywhere (GitHub Pages, repo mrm0biu5/backstage-remote; source
   in MagicAppDev/backstage/remote/). It talks to the private repo mrm0biu5/backstage-sync with a GitHub token kept
@@ -111,7 +111,7 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
 </head>
 <body><div class="wrap">
 <header>
-  <div class="brand" id="brand"><img src="icon-180.png" alt="">Backstage<span class="ver" id="ver"></span></div>
+  <div class="brand" id="brand"><img src="icon-180.png" alt="">StageManager<span class="ver" id="ver"></span></div>
   <div class="hdr"><div class="pill"><span class="led" id="macLed"></span><span id="macTxt">connecting…</span></div>
     <button class="cog" id="cog" title="Settings" aria-label="Settings" hidden>⚙︎</button></div>
 </header>
@@ -122,7 +122,7 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
     <div class="about">Paste a GitHub token that can read and write the private <b>backstage-sync</b> repo. It's kept only on
       this phone and sent only to GitHub.</div>
     <div class="about" id="tokHint" hidden style="color:var(--gold,#d4a84b)">You're in Safari, which forgets the token. Tap Share →
-      <b>Add to Home Screen</b>, open Backstage from that icon and connect there once: it stays connected.</div>
+      <b>Add to Home Screen</b>, open StageManager from that icon and connect there once: it stays connected.</div>
     <label>GitHub token</label><input type="password" id="tok" autocomplete="off" placeholder="github_pat_…">
     <div class="row" style="margin-top:12px"><button class="btn gold" id="tokSave">Connect</button><span class="msg" id="tokMsg"></span></div>
   </div>
@@ -135,14 +135,14 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
   <div class="card"><div class="row" style="justify-content:space-between"><div class="title">Sign-ins</div>
       <button class="btn sm" id="siCheck">Check now</button></div>
     <div class="silist" id="siList"><div class="help">Not checked yet.</div></div><div class="msg" id="siMsg"></div></div>
-  <div class="card"><div class="row" style="justify-content:space-between"><div><div class="title">Pair Backstage app</div>
-      <div class="about">Opens the Backstage iPhone app and connects it. The other apps (AIcons, PixelsGhost, Double Crossed) take its connection by themselves.</div></div><button class="btn gold pairApp" data-app="backstageapp">Pair</button></div></div>
+  <div class="card"><div class="row" style="justify-content:space-between"><div><div class="title">Pair BackstageHub</div>
+      <div class="about">Opens BackstageHub on this iPhone and connects it. The other apps (AIcons, PixelsGhost, Double Crossed) take its connection by themselves.</div></div><button class="btn gold pairApp" data-app="backstageapp">Pair</button></div></div>
   <div class="card"><div class="title">The Mac</div><div class="about" id="macInfo"></div></div>
   <div class="card"><div class="row" style="justify-content:space-between"><div><div class="title">Playwright browser</div>
       <div class="about">The hidden browser that works on Instagram for the acts. Show it on the Mac to sign in to a site.</div></div>
       <button class="btn" id="browserBtn">Show</button></div><div class="msg" id="browserMsg"></div></div>
   <div class="card"><div class="title">Logins</div>
-    <div class="about">Passwords and keys are kept in the Backstage iPhone app (⚙︎ → Logins) and never go through GitHub.</div></div>
+    <div class="about">Passwords and keys are kept in BackstageHub (⚙︎ → Logins) and never go through GitHub.</div></div>
   <div class="card"><div class="title">This phone</div>
     <div class="about">Changes reach the Mac through GitHub within about 5 seconds; buttons run there within about 10.</div>
     <div class="row" style="margin-top:12px"><button class="btn" id="forget">Disconnect this phone</button></div></div>
@@ -152,7 +152,7 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
 <script src="studio.js"></script>
 <script>
 // (bump on every change, so the owner can tell which version the phone is showing)
-const VERSION = "1.36";
+const VERSION = "1.37";
 document.getElementById("ver").textContent = "v" + VERSION;
 const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
 const $ = s => document.querySelector(s);
@@ -417,7 +417,7 @@ function showSignins(si) {
     : (si.needed || []).map(n => `<div class="si"><span class="led"></span><div class="txt"><div class="name">${esc(n)}</div><div class="help">not checked yet</div></div></div>`).join('');
   $('#siList').querySelectorAll('[data-signin]').forEach(b => b.onclick = async () => {
     b.disabled = true;
-    try { await backstageCmd('signin', {site: b.dataset.signin}, 'sign in from the phone'); $('#siMsg').textContent = 'Opening it in the Backstage browser on the Mac: sign in there, then Check now.'; }
+    try { await backstageCmd('signin', {site: b.dataset.signin}, 'sign in from the phone'); $('#siMsg').textContent = 'Opening it in the StageManager browser on the Mac: sign in there, then Check now.'; }
     catch (e) { b.disabled = false; alert(e.message); }
   });
 }
