@@ -141,6 +141,8 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
       <div class="about">Opens AIcons on this phone and connects it to Backstage.</div></div><button class="btn gold pairApp" data-app="aicons">Pair</button></div></div>
   <div class="card"><div class="row" style="justify-content:space-between"><div><div class="title">Pair PixelsGhost</div>
       <div class="about">Opens PixelsGhost on this phone and connects it to Backstage.</div></div><button class="btn gold pairApp" data-app="pixelsghost">Pair</button></div></div>
+  <div class="card"><div class="row" style="justify-content:space-between"><div><div class="title">Pair Double Crossed</div>
+      <div class="about">Opens Double Crossed on this phone and connects it to Backstage.</div></div><button class="btn gold pairApp" data-app="doublecross">Pair</button></div></div>
   <div class="card"><div class="title">The Mac</div><div class="about" id="macInfo"></div></div>
   <div class="card"><div class="row" style="justify-content:space-between"><div><div class="title">Playwright browser</div>
       <div class="about">The hidden browser that works on Instagram for the acts. Show it on the Mac to sign in to a site.</div></div>
@@ -156,7 +158,7 @@ details.fold{margin-top:10px;background:var(--card2);border:0;border-radius:12px
 <script src="studio.js"></script>
 <script>
 // (bump on every change, so the owner can tell which version the phone is showing)
-const VERSION = "1.34";
+const VERSION = "1.35";
 document.getElementById("ver").textContent = "v" + VERSION;
 const REPO = 'mrm0biu5/backstage-sync', API = `https://api.github.com/repos/${REPO}/contents/`;
 const $ = s => document.querySelector(s);
@@ -237,7 +239,8 @@ function actCard(a) {
     ${folds}${restHTML}${res || lib ? `<div class="folds">${res}${lib}</div>` : ''}</div>`;
 }
 // tricks that are web apps of their own (phone home-screen apps), listed with the acts on the home page
-const LINKS = [{title: 'AIcons', about: 'Spell a card with app icons on a fake home screen', url: 'aicons://'}];
+const LINKS = [{title: 'AIcons', about: 'Spell a card with app icons on a fake home screen', url: 'aicons://'},
+  {title: 'Double Crossed', about: 'An X on your palm that vanishes when you shake it', url: 'doublecross://'}];
 function tilesHTML(acts, links = true) {
   return acts.map(a => `<button class="tile" data-go="${a.name}"><span class="led" id="tl-${a.name}"></span><div class="txt"><div class="title">${esc(a.tab || a.title)}</div>
       <div class="line" id="tt-${a.name}">${esc(a.about || '')}</div></div><span class="go">›</span></button>`).join('')
